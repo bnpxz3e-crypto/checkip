@@ -3,137 +3,509 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>เช็คตำแหน่งเครื่อง</title>
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: Arial, "Tahoma", sans-serif;
       background: #111827;
-      color: white;
+      color: #ffffff;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       padding: 20px;
     }
+
     .box {
       width: 100%;
-      max-width: 700px;
+      max-width: 780px;
       background: #1f2937;
-      padding: 25px;
+      padding: 24px;
       border-radius: 18px;
-      box-shadow: 0 10px 30px #0008;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
     }
+
     button {
       width: 100%;
-      padding: 18px;
+      padding: 18px 20px;
       font-size: 20px;
       border: none;
       border-radius: 12px;
       background: #22c55e;
-      color: white;
+      color: #ffffff;
       cursor: pointer;
       font-weight: bold;
+      transition: 0.2s;
     }
-    button:hover { background: #16a34a; }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    button:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+
     pre {
       margin-top: 20px;
       background: #020617;
+      color: #ffffff;
       padding: 18px;
       border-radius: 12px;
       white-space: pre-wrap;
-      line-height: 1.6;
+      line-height: 1.65;
       overflow-x: auto;
+      font-size: 14px;
+      min-height: 180px;
+    }
+
+    .note {
+      margin-top: 12px;
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.6;
     }
   </style>
 </head>
+
 <body>
 
   <div class="box">
-    <button onclick="getLocationInfo()">กดเพื่อแสดงตำแหน่งเครื่องนี้</button>
+    <button id="btn" onclick="getLocationInfo()">
+      กดเพื่อแสดงตำแหน่งเครื่องนี้
+    </button>
+
+    <div class="note">
+      หมายเหตุ: GPS คือพิกัดจริงของเครื่อง ส่วน IP คือพิกัดจากอินเทอร์เน็ต/VPN
+    </div>
+
     <pre id="result">ยังไม่มีข้อมูล</pre>
   </div>
 
 <script>
-async function getLocationInfo() {
-  const result = document.getElementById("result");
-  result.textContent = "กำลังขอพิกัดและดึงข้อมูล IP...";
+const btn = document.getElementById("btn");
+const result = document.getElementById("result");
 
-  let gpsData = null;
+function value(v) {
+  if (v === null || v === undefined || v === "") return "-";
+  return v;
+}
+
+function getNested(obj, path) {
+  try {
+    return path.split(".").reduce((acc, key) => acc && acc[key], obj);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    cache: "no-store"
+  });
+
+  if (!res.ok) {
+    throw new Error("HTTP " + res.status);
+  }
+
+  return await res.json();
+}
+
+async function getGPS() {
+  if (!navigator.geolocation) {
+    return {
+      error: "เบราว์เซอร์นี้ไม่รองรับ GPS"
+    };
+  }
 
   try {
-    gpsData = await new Promise((resolve, reject) => {
+    const pos = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
-        pos => resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy + " เมตร",
-          altitude: pos.coords.altitude,
-          speed: pos.coords.speed,
-          heading: pos.coords.heading
-        }),
-        err => reject(err),
+        resolve,
+        reject,
         {
           enableHighAccuracy: true,
-          timeout: 15000,
+          timeout: 20000,
           maximumAge: 0
         }
       );
     });
+
+    return {
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      accuracy: pos.coords.accuracy,
+      altitude: pos.coords.altitude,
+      altitudeAccuracy: pos.coords.altitudeAccuracy,
+      speed: pos.coords.speed,
+      heading: pos.coords.heading,
+      timestamp: new Date(pos.timestamp).toLocaleString("th-TH")
+    };
+
+  } catch (err) {
+    let msg = "ไม่สามารถดึง GPS ได้";
+
+    if (err.code === 1) {
+      msg = "ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง GPS";
+    } else if (err.code === 2) {
+      msg = "ไม่พบตำแหน่งของเครื่อง";
+    } else if (err.code === 3) {
+      msg = "ดึง GPS นานเกินไป หมดเวลา";
+    }
+
+    return {
+      error: msg,
+      detail: err.message || String(err)
+    };
+  }
+}
+
+async function getIPInfo() {
+  const errors = {};
+
+  try {
+    const data = await fetchJson("https://ipapi.co/json/");
+    data.source_api = "ipapi.co";
+    return data;
   } catch (e) {
-    gpsData = {
-      error: "ผู้ใช้ไม่อนุญาต GPS หรือเครื่องนี้ไม่รองรับ / ต้องใช้ HTTPS"
+    errors.ipapi = String(e);
+  }
+
+  try {
+    const data = await fetchJson("https://ipwho.is/");
+    data.source_api = "ipwho.is";
+    return data;
+  } catch (e) {
+    errors.ipwhois = String(e);
+  }
+
+  try {
+    const data = await fetchJson("https://api.country.is/");
+    data.source_api = "api.country.is";
+    return data;
+  } catch (e) {
+    errors.countryis = String(e);
+  }
+
+  try {
+    const data = await fetchJson("https://api.ipify.org?format=json");
+    data.source_api = "api.ipify.org";
+    return data;
+  } catch (e) {
+    errors.ipify = String(e);
+  }
+
+  return {
+    error: "ดึงข้อมูล IP ไม่สำเร็จทุก API",
+    errors: errors
+  };
+}
+
+async function reverseGPS(lat, lon) {
+  if (!lat || !lon) {
+    return {
+      error: "ไม่มีพิกัด GPS สำหรับค้นหาที่อยู่"
     };
   }
 
-  let ipData = null;
-
   try {
-    const res = await fetch("https://ipapi.co/json/");
-    ipData = await res.json();
+    const url =
+      "https://nominatim.openstreetmap.org/reverse" +
+      "?format=jsonv2" +
+      "&lat=" + encodeURIComponent(lat) +
+      "&lon=" + encodeURIComponent(lon) +
+      "&zoom=18" +
+      "&addressdetails=1" +
+      "&accept-language=th";
+
+    const data = await fetchJson(url);
+    data.source_api = "OpenStreetMap Nominatim";
+    return data;
+
   } catch (e) {
-    ipData = { error: "ดึงข้อมูล IP ไม่สำเร็จ" };
+    return {
+      error: "แปลง GPS เป็นที่อยู่ไม่สำเร็จ",
+      detail: String(e)
+    };
+  }
+}
+
+function normalizeIP(ipData) {
+  return {
+    source: value(ipData.source_api),
+
+    ip: value(
+      ipData.ip ||
+      ipData.query
+    ),
+
+    network: value(
+      ipData.network
+    ),
+
+    country: value(
+      ipData.country_name ||
+      ipData.country
+    ),
+
+    countryCode: value(
+      ipData.country_code ||
+      ipData.country
+    ),
+
+    region: value(
+      ipData.region ||
+      ipData.regionName
+    ),
+
+    city: value(
+      ipData.city
+    ),
+
+    postal: value(
+      ipData.postal ||
+      ipData.zip
+    ),
+
+    latitude: value(
+      ipData.latitude ||
+      ipData.lat
+    ),
+
+    longitude: value(
+      ipData.longitude ||
+      ipData.lon
+    ),
+
+    timezone: value(
+      typeof ipData.timezone === "string"
+        ? ipData.timezone
+        : getNested(ipData, "timezone.id")
+    ),
+
+    utcOffset: value(
+      ipData.utc_offset
+    ),
+
+    currency: value(
+      ipData.currency ||
+      getNested(ipData, "currency.code")
+    ),
+
+    languages: value(
+      ipData.languages
+    ),
+
+    asn: value(
+      ipData.asn ||
+      getNested(ipData, "connection.asn")
+    ),
+
+    org: value(
+      ipData.org ||
+      ipData.isp ||
+      getNested(ipData, "connection.org")
+    ),
+
+    continent: value(
+      ipData.continent_code ||
+      ipData.continent
+    ),
+
+    callingCode: value(
+      ipData.country_calling_code
+    ),
+
+    capital: value(
+      ipData.country_capital
+    ),
+
+    tld: value(
+      ipData.country_tld
+    )
+  };
+}
+
+function normalizeAddress(gpsAddress) {
+  const a = gpsAddress.address || {};
+
+  return {
+    source: value(gpsAddress.source_api),
+    full: value(gpsAddress.display_name),
+
+    country: value(a.country),
+    countryCode: value(a.country_code),
+
+    province: value(
+      a.state ||
+      a.province
+    ),
+
+    district: value(
+      a.county ||
+      a.city_district ||
+      a.district ||
+      a.municipality
+    ),
+
+    subdistrict: value(
+      a.suburb ||
+      a.subdistrict ||
+      a.village ||
+      a.town ||
+      a.hamlet ||
+      a.neighbourhood
+    ),
+
+    city: value(
+      a.city ||
+      a.town ||
+      a.village ||
+      a.municipality
+    ),
+
+    postcode: value(a.postcode),
+    road: value(a.road),
+    houseNumber: value(a.house_number)
+  };
+}
+
+async function getLocationInfo() {
+  btn.disabled = true;
+  btn.textContent = "กำลังดึงข้อมูล...";
+
+  result.textContent = "กำลังขอ GPS จากเครื่อง...\nกำลังดึงข้อมูล IP / VPN...\nกรุณารอสักครู่";
+
+  const gpsData = await getGPS();
+
+  result.textContent = "ได้ข้อมูล GPS แล้ว\nกำลังดึงข้อมูล IP / VPN...";
+
+  const ipData = await getIPInfo();
+
+  result.textContent = "ได้ข้อมูล IP แล้ว\nกำลังแปลง GPS เป็นที่อยู่...";
+
+  let gpsAddress = {};
+  if (gpsData.latitude && gpsData.longitude) {
+    gpsAddress = await reverseGPS(gpsData.latitude, gpsData.longitude);
+  } else {
+    gpsAddress = {
+      error: "ไม่มี GPS จึงไม่สามารถแปลงเป็นที่อยู่ได้"
+    };
   }
 
+  const ip = normalizeIP(ipData);
+  const addr = normalizeAddress(gpsAddress);
+
+  const googleMaps =
+    gpsData.latitude && gpsData.longitude
+      ? `https://www.google.com/maps?q=${gpsData.latitude},${gpsData.longitude}`
+      : "-";
+
+  const ipMaps =
+    ip.latitude !== "-" && ip.longitude !== "-"
+      ? `https://www.google.com/maps?q=${ip.latitude},${ip.longitude}`
+      : "-";
+
   const text = `
-====== ตำแหน่ง GPS จากเครื่อง ======
-Latitude: ${gpsData.latitude ?? "-"}
-Longitude: ${gpsData.longitude ?? "-"}
-ความแม่นยำ: ${gpsData.accuracy ?? "-"}
-Altitude: ${gpsData.altitude ?? "-"}
-Speed: ${gpsData.speed ?? "-"}
-Heading: ${gpsData.heading ?? "-"}
-Error: ${gpsData.error ?? "-"}
+====== ตำแหน่ง GPS จากเครื่องจริง ======
 
-Google Maps:
-${gpsData.latitude && gpsData.longitude ? `https://www.google.com/maps?q=${gpsData.latitude},${gpsData.longitude}` : "-"}
+Latitude: ${value(gpsData.latitude)}
+Longitude: ${value(gpsData.longitude)}
+ความแม่นยำ: ${gpsData.accuracy ? gpsData.accuracy + " เมตร" : "-"}
+Altitude: ${value(gpsData.altitude)}
+Altitude Accuracy: ${value(gpsData.altitudeAccuracy)}
+Speed: ${value(gpsData.speed)}
+Heading: ${value(gpsData.heading)}
+เวลาที่ดึง GPS: ${value(gpsData.timestamp)}
+Error: ${value(gpsData.error)}
+Detail: ${value(gpsData.detail)}
+
+Google Maps GPS:
+${googleMaps}
 
 
-====== ข้อมูลจาก IP ======
-IP: ${ipData.ip ?? "-"}
-เครือข่าย: ${ipData.network ?? "-"}
-ประเทศ: ${ipData.country_name ?? "-"}
-รหัสประเทศ: ${ipData.country ?? "-"}
-จังหวัด/Region: ${ipData.region ?? "-"}
-เมือง/อำเภอโดยประมาณ: ${ipData.city ?? "-"}
-รหัสไปรษณีย์: ${ipData.postal ?? "-"}
-Latitude จาก IP: ${ipData.latitude ?? "-"}
-Longitude จาก IP: ${ipData.longitude ?? "-"}
-Timezone: ${ipData.timezone ?? "-"}
-UTC Offset: ${ipData.utc_offset ?? "-"}
-สกุลเงิน: ${ipData.currency ?? "-"}
-ภาษา: ${ipData.languages ?? "-"}
-ASN: ${ipData.asn ?? "-"}
-ผู้ให้บริการ/องค์กร: ${ipData.org ?? "-"}
-Continent: ${ipData.continent_code ?? "-"}
-Country Calling Code: ${ipData.country_calling_code ?? "-"}
-Country Capital: ${ipData.country_capital ?? "-"}
-Country TLD: ${ipData.country_tld ?? "-"}
+====== ที่อยู่จาก GPS ======
 
-====== Raw IP Data ทั้งหมด ======
+API ที่ใช้: ${addr.source}
+ที่อยู่เต็ม: ${addr.full}
+
+ประเทศ: ${addr.country}
+รหัสประเทศ: ${addr.countryCode}
+จังหวัด: ${addr.province}
+อำเภอ/เขต: ${addr.district}
+ตำบล/แขวง/พื้นที่ย่อย: ${addr.subdistrict}
+เมือง: ${addr.city}
+รหัสไปรษณีย์: ${addr.postcode}
+ถนน: ${addr.road}
+บ้านเลขที่: ${addr.houseNumber}
+
+Error GPS Address: ${value(gpsAddress.error)}
+Detail GPS Address: ${value(gpsAddress.detail)}
+
+
+====== ข้อมูลจาก IP / VPN ======
+
+API ที่ใช้: ${ip.source}
+IP: ${ip.ip}
+เครือข่าย: ${ip.network}
+ประเทศ: ${ip.country}
+รหัสประเทศ: ${ip.countryCode}
+จังหวัด/Region: ${ip.region}
+เมือง/อำเภอโดยประมาณ: ${ip.city}
+รหัสไปรษณีย์: ${ip.postal}
+Latitude จาก IP: ${ip.latitude}
+Longitude จาก IP: ${ip.longitude}
+Timezone: ${ip.timezone}
+UTC Offset: ${ip.utcOffset}
+สกุลเงิน: ${ip.currency}
+ภาษา: ${ip.languages}
+ASN: ${ip.asn}
+ผู้ให้บริการ/องค์กร: ${ip.org}
+Continent: ${ip.continent}
+Country Calling Code: ${ip.callingCode}
+Country Capital: ${ip.capital}
+Country TLD: ${ip.tld}
+
+Google Maps IP:
+${ipMaps}
+
+Error IP: ${value(ipData.error)}
+
+
+====== สรุปสำคัญ ======
+
+GPS = ตำแหน่งจริงของเครื่อง
+IP/VPN = ตำแหน่งจากอินเทอร์เน็ตหรือ VPN
+
+ถ้าเปิด VPN:
+- GPS ยังเป็นที่อยู่จริงของเครื่อง
+- IP จะเปลี่ยนตามประเทศ VPN ถ้า API ดึงสำเร็จ
+
+
+====== Raw GPS Data ======
+${JSON.stringify(gpsData, null, 2)}
+
+
+====== Raw GPS Address Data ======
+${JSON.stringify(gpsAddress, null, 2)}
+
+
+====== Raw IP Data ======
 ${JSON.stringify(ipData, null, 2)}
 `;
 
   result.textContent = text;
+
+  btn.disabled = false;
+  btn.textContent = "กดเพื่อแสดงตำแหน่งเครื่องนี้";
 }
 </script>
 
