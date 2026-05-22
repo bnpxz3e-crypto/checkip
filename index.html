@@ -292,36 +292,130 @@ async function getGPS() {
 async function getIPInfo() {
   const errors = {};
 
-  try {
-    const data = await fetchJson("https://ipapi.co/json/");
-    data.source_api = "ipapi.co";
-    return data;
-  } catch (e) {
-    errors.ipapi = String(e);
-  }
+  const apis = [
+    {
+      name: "ipapi.co",
+      url: "https://ipapi.co/json/",
+      map: function (d) {
+        return {
+          source_api: "ipapi.co",
+          ip: d.ip || "",
+          country_name: d.country_name || "",
+          country_code: d.country_code || d.country || "",
+          region: d.region || "",
+          city: d.city || "",
+          postal: d.postal || "",
+          latitude: d.latitude || "",
+          longitude: d.longitude || "",
+          org: d.org || "",
+          asn: d.asn || "",
+          timezone: d.timezone || ""
+        };
+      }
+    },
+    {
+      name: "ipwho.is",
+      url: "https://ipwho.is/",
+      map: function (d) {
+        if (d.success === false) throw new Error(d.message || "ipwho.is failed");
 
-  try {
-    const data = await fetchJson("https://ipwho.is/");
-    data.source_api = "ipwho.is";
-    return data;
-  } catch (e) {
-    errors.ipwhois = String(e);
-  }
+        return {
+          source_api: "ipwho.is",
+          ip: d.ip || "",
+          country_name: d.country || "",
+          country_code: d.country_code || "",
+          region: d.region || "",
+          city: d.city || "",
+          postal: d.postal || "",
+          latitude: d.latitude || "",
+          longitude: d.longitude || "",
+          org: d.connection?.org || "",
+          asn: d.connection?.asn || "",
+          timezone: d.timezone?.id || ""
+        };
+      }
+    },
+    {
+      name: "ipinfo.io",
+      url: "https://ipinfo.io/json",
+      map: function (d) {
+        let lat = "";
+        let lon = "";
 
-  try {
-    const data = await fetchJson("https://api.country.is/");
-    data.source_api = "api.country.is";
-    return data;
-  } catch (e) {
-    errors.countryis = String(e);
-  }
+        if (d.loc && d.loc.includes(",")) {
+          const parts = d.loc.split(",");
+          lat = parts[0] || "";
+          lon = parts[1] || "";
+        }
 
-  try {
-    const data = await fetchJson("https://api.ipify.org?format=json");
-    data.source_api = "api.ipify.org";
-    return data;
-  } catch (e) {
-    errors.ipify = String(e);
+        return {
+          source_api: "ipinfo.io",
+          ip: d.ip || "",
+          country_name: d.country || "",
+          country_code: d.country || "",
+          region: d.region || "",
+          city: d.city || "",
+          postal: d.postal || "",
+          latitude: lat,
+          longitude: lon,
+          org: d.org || "",
+          asn: d.org || "",
+          timezone: d.timezone || ""
+        };
+      }
+    },
+    {
+      name: "geojs.io",
+      url: "https://get.geojs.io/v1/ip/geo.json",
+      map: function (d) {
+        return {
+          source_api: "geojs.io",
+          ip: d.ip || "",
+          country_name: d.country || "",
+          country_code: d.country_code || "",
+          region: d.region || "",
+          city: d.city || "",
+          postal: "",
+          latitude: d.latitude || "",
+          longitude: d.longitude || "",
+          org: d.organization_name || "",
+          asn: d.asn || "",
+          timezone: d.timezone || ""
+        };
+      }
+    },
+    {
+      name: "api.ipify.org",
+      url: "https://api.ipify.org?format=json",
+      map: function (d) {
+        return {
+          source_api: "api.ipify.org",
+          ip: d.ip || "",
+          country_name: "",
+          country_code: "",
+          region: "",
+          city: "",
+          postal: "",
+          latitude: "",
+          longitude: "",
+          org: "",
+          asn: "",
+          timezone: "",
+          note: "api.ipify.org แสดงได้แค่ IP ไม่มีประเทศ/เมือง"
+        };
+      }
+    }
+  ];
+
+  for (const api of apis) {
+    try {
+      const raw = await fetchJson(api.url);
+      const mapped = api.map(raw);
+      mapped.raw = raw;
+      return mapped;
+    } catch (e) {
+      errors[api.name] = String(e);
+    }
   }
 
   return {
@@ -347,11 +441,12 @@ function normalizeIP(ip) {
     postal: ip.postal || ip.zip || "",
     latitude: ip.latitude || ip.lat || "",
     longitude: ip.longitude || ip.lon || "",
-    org: ip.org || ip.isp || (ip.connection && ip.connection.org) || "",
+    org: ip.org || ip.isp || ip.organization_name || (ip.connection && ip.connection.org) || "",
     asn: ip.asn || (ip.connection && ip.connection.asn) || "",
     timezone: timezone,
     source_api: ip.source_api || "",
-    error: ip.error || ""
+    error: ip.error || "",
+    note: ip.note || ""
   };
 }
 
