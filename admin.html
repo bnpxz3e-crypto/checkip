@@ -31,15 +31,6 @@
       margin-bottom: 16px;
     }
 
-    input {
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #475569;
-      background: #020617;
-      color: #ffffff;
-      min-width: 240px;
-    }
-
     button {
       padding: 12px 18px;
       border: none;
@@ -149,10 +140,10 @@
 
 <script>
 /************************************************
- * ตั้งค่า
+ * CONFIG
  ************************************************/
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTsxhX8BphqarOgrNfIKoU2X0LoO_mh44Ce9PsTQecBbIQxAJG8Ai8pGFIOdoSECF_XQ/exec";
-const ADMIN_KEY = "201045";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwV7r9NBRgW8JSMuh81mgseZO330J9sCacyuYuRYVKBW1MZkguRhF2IlhVToVK4T7YS9Q/exec";
+const ADMIN_KEY = "123456";
 
 
 /************************************************
@@ -182,10 +173,10 @@ function escapeHtml(text) {
 function jsonp(url) {
   return new Promise((resolve, reject) => {
     const callbackName =
-      "jsonp_callback_" +
+      "jsonp_admin_" +
       Date.now() +
       "_" +
-      Math.floor(Math.random() * 99999);
+      Math.floor(Math.random() * 999999);
 
     window[callbackName] = function(data) {
       delete window[callbackName];
@@ -206,26 +197,11 @@ function jsonp(url) {
   });
 }
 
-function checkConfig() {
-  if (!SCRIPT_URL || SCRIPT_URL.includes("วางลิงก์")) {
-    alert("ยังไม่ได้ใส่ลิงก์ Apps Script ใน SCRIPT_URL");
-    return false;
-  }
-
-  if (!ADMIN_KEY || ADMIN_KEY === "123456") {
-    console.warn("ตอนนี้ยังใช้ ADMIN_KEY ค่าเริ่มต้น 123456");
-  }
-
-  return true;
-}
-
 
 /************************************************
- * โหลดข้อมูล
+ * Load Data
  ************************************************/
 async function loadData() {
-  if (!checkConfig()) return;
-
   statusEl.textContent = "กำลังโหลดข้อมูล...";
   listEl.innerHTML = "";
 
@@ -268,11 +244,9 @@ async function loadData() {
 
 
 /************************************************
- * ล้างข้อมูล
+ * Clear Data
  ************************************************/
 async function clearData() {
-  if (!checkConfig()) return;
-
   const ok = confirm("ต้องการล้างข้อมูลทั้งหมดจริงไหม?");
   if (!ok) return;
 
@@ -310,7 +284,7 @@ async function clearData() {
 
 
 /************************************************
- * แสดง Card
+ * Render Card
  ************************************************/
 function renderCard(row, index) {
   const maps = row["Google Maps"] || "";
@@ -329,6 +303,9 @@ function renderCard(row, index) {
 
         <div class="label">เบราว์เซอร์</div>
         <div>${escapeHtml(val(row["เบราว์เซอร์"]))}</div>
+
+        <div class="label">User Agent</div>
+        <div>${escapeHtml(val(row["User Agent"]))}</div>
 
         <div class="label">ภาษาเครื่อง</div>
         <div>${escapeHtml(val(row["ภาษาเครื่อง"]))}</div>
