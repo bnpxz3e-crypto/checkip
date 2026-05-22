@@ -139,23 +139,12 @@
 <div id="list"></div>
 
 <script>
-/************************************************
- * CONFIG
- ************************************************/
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyz8e8PxmEJ1g3RLL8xDGbTigD6H1mv_YphBsBLJOIg_UfXMvssaCtropuj51ECXhNwyA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwV7r9NBRgW8JSMuh81mgseZO330J9sCacyuYuRYVKBW1MZkguRhF2IlhVToVK4T7YS9Q/exec";
 const ADMIN_KEY = "123456";
 
-
-/************************************************
- * Elements
- ************************************************/
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("list");
 
-
-/************************************************
- * Utility
- ************************************************/
 function val(v) {
   if (v === null || v === undefined || v === "") return "-";
   return v;
@@ -197,10 +186,6 @@ function jsonp(url) {
   });
 }
 
-
-/************************************************
- * Load Data
- ************************************************/
 async function loadData() {
   statusEl.textContent = "กำลังโหลดข้อมูล...";
   listEl.innerHTML = "";
@@ -242,10 +227,6 @@ async function loadData() {
   }
 }
 
-
-/************************************************
- * Clear Data
- ************************************************/
 async function clearData() {
   const ok = confirm("ต้องการล้างข้อมูลทั้งหมดจริงไหม?");
   if (!ok) return;
@@ -282,10 +263,6 @@ async function clearData() {
   }
 }
 
-
-/************************************************
- * Render Card
- ************************************************/
 function renderCard(row, index) {
   const maps = row["Google Maps"] || "";
   const jsonText = row["ข้อมูลทั้งหมด JSON"] || "";
@@ -402,6 +379,9 @@ function renderCard(row, index) {
 
         <div class="label">IP Error</div>
         <div>${escapeHtml(val(row["IP Error"]))}</div>
+
+        <div class="label">IP Note</div>
+        <div>${escapeHtml(val(row["IP Note"]))}</div>
 
         <div class="label">เวลาที่ส่งจากเครื่อง</div>
         <div>${escapeHtml(val(row["เวลาที่ส่งจากเครื่อง"]))}</div>
