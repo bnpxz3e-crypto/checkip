@@ -126,7 +126,8 @@ function getBrowserName() {
 
   if (ua.includes("Edg")) return "Microsoft Edge";
   if (ua.includes("OPR") || ua.includes("Opera")) return "Opera";
-  if (ua.includes("Chrome")) return "Google Chrome";
+  if (ua.includes("Chrome") && !ua.includes("CriOS")) return "Google Chrome";
+  if (ua.includes("CriOS")) return "Chrome iOS";
   if (ua.includes("Firefox")) return "Firefox";
   if (ua.includes("Safari")) return "Safari";
 
@@ -164,6 +165,16 @@ async function fetchJson(url) {
   }
 
   return await res.json();
+}
+
+function base64UrlEncode(str) {
+  const utf8 = unescape(encodeURIComponent(str));
+  const base64 = btoa(utf8);
+
+  return base64
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 async function getGPS() {
@@ -226,8 +237,6 @@ async function getGPS() {
 }
 
 async function getIPInfo() {
-  const errors = {};
-
   const apis = [
     {
       name: "ipapi.co",
@@ -345,6 +354,8 @@ async function getIPInfo() {
     }
   ];
 
+  const errors = {};
+
   for (const api of apis) {
     try {
       const raw = await fetchJson(api.url);
@@ -422,20 +433,45 @@ function normalizeAddress(addressData) {
   };
 }
 
+/*
+  ส่งข้อมูลแบบ Form + Hidden iframe
+  เหมาะกับมือถือมากกว่า fetch no-cors
+*/
 async function postToAdmin(payload) {
-  await fetch(SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify(payload)
-  });
+  return new Promise((resolve) => {
+    const iframeName = "hidden_iframe_" + Date.now();
 
-  return {
-    ok: true,
-    message: "saved"
-  };
+    const iframe = document.createElement("iframe");
+    iframe.name = iframeName;
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = SCRIPT_URL;
+    form.target = iframeName;
+    form.style.display = "none";
+
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "payload";
+    input.value = base64UrlEncode(JSON.stringify(payload));
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+
+    form.submit();
+
+    setTimeout(() => {
+      form.remove();
+      iframe.remove();
+
+      resolve({
+        ok: true,
+        message: "sent"
+      });
+    }, 1800);
+  });
 }
 
 async function sendLocation() {
@@ -562,7 +598,7 @@ IP Error: ${val(payload.ip_error)}
   try {
     const saveResult = await postToAdmin(payload);
     result.textContent += "\n\nส่งคำขอไปยังแอดมินแล้ว: " + saveResult.message;
-    result.textContent += "\nกรุณาตรวจสอบในหน้าแอดมินอีกครั้ง";
+    result.textContent += "\nกรุณาเปิดหน้าแอดมินแล้วกดโหลดข้อมูล";
   } catch (err) {
     result.textContent += "\n\nส่งข้อมูลไม่สำเร็จ: " + String(err);
   }
