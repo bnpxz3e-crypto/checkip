@@ -111,22 +111,11 @@
 </div>
 
 <script>
-/************************************************
- * Apps Script URL
- ************************************************/
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyz8e8PxmEJ1g3RLL8xDGbTigD6H1mv_YphBsBLJOIg_UfXMvssaCtropuj51ECXhNwyA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwV7r9NBRgW8JSMuh81mgseZO330J9sCacyuYuRYVKBW1MZkguRhF2IlhVToVK4T7YS9Q/exec";
 
-
-/************************************************
- * Elements
- ************************************************/
 const btn = document.getElementById("btn");
 const result = document.getElementById("result");
 
-
-/************************************************
- * Utility
- ************************************************/
 function val(v) {
   if (v === null || v === undefined || v === "") return "-";
   return v;
@@ -177,10 +166,6 @@ async function fetchJson(url) {
   return await res.json();
 }
 
-
-/************************************************
- * Base64 URL Encode
- ************************************************/
 function base64UrlEncode(str) {
   const utf8 = unescape(encodeURIComponent(str));
   const base64 = btoa(utf8);
@@ -191,10 +176,6 @@ function base64UrlEncode(str) {
     .replace(/=+$/g, "");
 }
 
-
-/************************************************
- * JSONP
- ************************************************/
 function jsonp(url) {
   return new Promise((resolve, reject) => {
     const callbackName =
@@ -222,10 +203,6 @@ function jsonp(url) {
   });
 }
 
-
-/************************************************
- * GPS
- ************************************************/
 async function getGPS() {
   if (!navigator.geolocation) {
     return {
@@ -285,10 +262,6 @@ async function getGPS() {
   }
 }
 
-
-/************************************************
- * IP / VPN Info
- ************************************************/
 async function getIPInfo() {
   const errors = {};
 
@@ -317,7 +290,9 @@ async function getIPInfo() {
       name: "ipwho.is",
       url: "https://ipwho.is/",
       map: function (d) {
-        if (d.success === false) throw new Error(d.message || "ipwho.is failed");
+        if (d.success === false) {
+          throw new Error(d.message || "ipwho.is failed");
+        }
 
         return {
           source_api: "ipwho.is",
@@ -329,9 +304,9 @@ async function getIPInfo() {
           postal: d.postal || "",
           latitude: d.latitude || "",
           longitude: d.longitude || "",
-          org: d.connection?.org || "",
-          asn: d.connection?.asn || "",
-          timezone: d.timezone?.id || ""
+          org: d.connection && d.connection.org ? d.connection.org : "",
+          asn: d.connection && d.connection.asn ? d.connection.asn : "",
+          timezone: d.timezone && d.timezone.id ? d.timezone.id : ""
         };
       }
     },
@@ -410,9 +385,7 @@ async function getIPInfo() {
   for (const api of apis) {
     try {
       const raw = await fetchJson(api.url);
-      const mapped = api.map(raw);
-      mapped.raw = raw;
-      return mapped;
+      return api.map(raw);
     } catch (e) {
       errors[api.name] = String(e);
     }
@@ -425,13 +398,6 @@ async function getIPInfo() {
 }
 
 function normalizeIP(ip) {
-  const timezone =
-    typeof ip.timezone === "string"
-      ? ip.timezone
-      : ip.timezone && ip.timezone.id
-        ? ip.timezone.id
-        : "";
-
   return {
     ip: ip.ip || ip.query || "",
     country: ip.country_name || ip.country || "",
@@ -441,19 +407,15 @@ function normalizeIP(ip) {
     postal: ip.postal || ip.zip || "",
     latitude: ip.latitude || ip.lat || "",
     longitude: ip.longitude || ip.lon || "",
-    org: ip.org || ip.isp || ip.organization_name || (ip.connection && ip.connection.org) || "",
-    asn: ip.asn || (ip.connection && ip.connection.asn) || "",
-    timezone: timezone,
+    org: ip.org || ip.isp || ip.organization_name || "",
+    asn: ip.asn || "",
+    timezone: typeof ip.timezone === "string" ? ip.timezone : "",
     source_api: ip.source_api || "",
     error: ip.error || "",
     note: ip.note || ""
   };
 }
 
-
-/************************************************
- * Reverse Geocoding GPS เป็นที่อยู่
- ************************************************/
 async function getAddressFromGPS(lat, lon) {
   if (!lat || !lon) {
     return {
@@ -497,13 +459,13 @@ function normalizeAddress(addressData) {
   };
 }
 
-
-/************************************************
- * ส่งข้อมูลไป Apps Script ด้วย JSONP GET
- ************************************************/
 async function postToAdmin(payload) {
   const payloadText = JSON.stringify(payload);
   const encoded = base64UrlEncode(payloadText);
+
+  if (encoded.length > 7000) {
+    throw new Error("ข้อมูลยาวเกินไป กรุณาลดข้อมูลที่ส่ง");
+  }
 
   const url =
     SCRIPT_URL +
@@ -519,10 +481,6 @@ async function postToAdmin(payload) {
   return res;
 }
 
-
-/************************************************
- * Main
- ************************************************/
 async function sendLocation() {
   btn.disabled = true;
   btn.textContent = "กำลังส่งข้อมูล...";
@@ -587,10 +545,7 @@ async function sendLocation() {
     ip_timezone: ip.timezone || "",
     ip_source_api: ip.source_api || "",
     ip_error: ip.error || "",
-
-    raw_gps: gps,
-    raw_ip: rawIP,
-    raw_address: rawAddress,
+    ip_note: ip.note || "",
 
     sent_at: new Date().toLocaleString("th-TH")
   };
@@ -641,6 +596,7 @@ Longitude IP: ${val(payload.ip_longitude)}
 ASN: ${val(payload.ip_asn)}
 Timezone: ${val(payload.ip_timezone)}
 IP Error: ${val(payload.ip_error)}
+หมายเหตุ IP: ${val(payload.ip_note)}
 
 
 กำลังส่งข้อมูลไปยังแอดมิน...
