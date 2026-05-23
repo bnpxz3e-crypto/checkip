@@ -168,7 +168,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdJ26u1KPB-Nmu0CwAK3hw4p97uMvYWHhXJlh_uWye36AO2j4o7haHu3HXGfh08EKCcg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrQPiURhXndzbS5EOmjV7S3AtHl159HqNrxSNtIr7LXVESXwsJmJF9nnaigdQApRBC_A/exec";
 const ADMIN_KEY = "123456";
 
 const sendBtn = document.getElementById("sendBtn");
@@ -181,6 +181,7 @@ const countryView = document.getElementById("countryView");
 
 async function submitLocation() {
   sendBtn.disabled = true;
+  statusEl.style.display = "block";
   statusEl.innerHTML = "กำลังตรวจสอบข้อมูลเครื่อง...";
 
   const data = createBaseData();
@@ -226,10 +227,25 @@ async function submitLocation() {
   try {
     statusEl.innerHTML = "กำลังส่งข้อมูลไปยังผู้ดูแล...";
 
-    await sendToSheetByForm(data);
-statusEl.innerHTML = "<span class='ok'>ส่งข้อมูลสำเร็จ</span>";
-    
+    const saveResult = await sendToSheetByJsonp(data);
+
+    if (!saveResult || saveResult.ok !== true) {
+      throw new Error(
+        saveResult && saveResult.error
+          ? saveResult.error
+          : "บันทึกไม่สำเร็จ"
+      );
+    }
+
+    /*
+      ส่งสำเร็จแล้วจะไม่แสดงคำว่า "ส่งข้อมูลสำเร็จ"
+      และซ่อนกล่องสถานะออกไปเลย
+    */
+    statusEl.innerHTML = "";
+    statusEl.style.display = "none";
+
   } catch (err) {
+    statusEl.style.display = "block";
     statusEl.innerHTML =
       "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " + escapeHtml(String(err));
   }
@@ -413,6 +429,7 @@ async function getIpInfo() {
     result.ip_source_api = "ipapi.co";
 
     return result;
+
   } catch (err1) {
     try {
       const res2 = await fetch("https://get.geojs.io/v1/ip/geo.json", {
@@ -440,6 +457,7 @@ async function getIpInfo() {
       result.ip_source_api = "geojs.io";
 
       return result;
+
     } catch (err2) {
       result.ip_error = String(err2);
       result.ip_note = "ดึง IP ไม่สำเร็จทั้ง ipapi.co และ geojs.io";
@@ -499,70 +517,57 @@ async function reverseGeocode(lat, lng) {
   return result;
 }
 
-/*
-  ส่งข้อมูลแบบ JSONP GET
-  วิธีนี้รู้ผลจริงกว่า sendBeacon / no-cors
-*/
-function sendToSheetByForm(data) {
+function sendToSheetByJsonp(data) {
   return new Promise((resolve, reject) => {
-    const payload = encodePayload(data);
-
-    const iframeName =
-      "hidden_iframe_" +
+    const callbackName =
+      "gpsSaveCallback_" +
       Date.now() +
       "_" +
       Math.floor(Math.random() * 999999);
 
-    const iframe = document.createElement("iframe");
-    iframe.name = iframeName;
-    iframe.style.display = "none";
+    const payload = encodePayload(data);
 
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = SCRIPT_URL;
-    form.target = iframeName;
-    form.style.display = "none";
+    const url =
+      SCRIPT_URL +
+      "?action=save" +
+      "&key=" + encodeURIComponent(ADMIN_KEY) +
+      "&callback=" + encodeURIComponent(callbackName) +
+      "&payload=" + encodeURIComponent(payload) +
+      "&_=" + Date.now();
 
-    const inputPayload = document.createElement("input");
-    inputPayload.type = "hidden";
-    inputPayload.name = "payload";
-    inputPayload.value = payload;
-
-    form.appendChild(inputPayload);
-
-    document.body.appendChild(iframe);
-    document.body.appendChild(form);
+    const script = document.createElement("script");
 
     const timer = setTimeout(() => {
       cleanup();
       reject(new Error("ส่งข้อมูลหมดเวลา"));
     }, 20000);
 
-    let loaded = false;
+    window[callbackName] = function(result) {
+      cleanup();
+      resolve(result);
+    };
 
-    iframe.onload = function() {
-      if (loaded) return;
-      loaded = true;
-
-      setTimeout(() => {
-        cleanup();
-        resolve(true);
-      }, 800);
+    script.onerror = function() {
+      cleanup();
+      reject(new Error("โหลด Apps Script ไม่สำเร็จ"));
     };
 
     function cleanup() {
       clearTimeout(timer);
 
-      if (form.parentNode) {
-        form.parentNode.removeChild(form);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
 
-      if (iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
+      try {
+        delete window[callbackName];
+      } catch (e) {
+        window[callbackName] = undefined;
       }
     }
 
-    form.submit();
+    script.src = url;
+    document.body.appendChild(script);
   });
 }
 
