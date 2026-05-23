@@ -235,14 +235,6 @@
       font-weight: bold;
     }
 
-    .small-note {
-      color: #94a3b8;
-      font-size: 13px;
-      line-height: 1.5;
-      margin-top: 14px;
-      text-align: center;
-    }
-
     @media (max-width: 650px) {
       body {
         padding: 14px;
@@ -281,7 +273,6 @@
 
 <body>
 
-<!-- หน้า Login -->
 <div id="loginPage" class="login-page">
   <div class="login-box">
     <h1>เข้าสู่ระบบแอดมิน</h1>
@@ -296,33 +287,18 @@
 
     <div class="form-group">
       <label for="usernameInput">Username</label>
-      <input
-        id="usernameInput"
-        type="text"
-        placeholder="กรอก username"
-        autocomplete="username"
-      >
+      <input id="usernameInput" type="text" placeholder="กรอก username" autocomplete="username">
     </div>
 
     <div class="form-group">
       <label for="passwordInput">Password</label>
-      <input
-        id="passwordInput"
-        type="password"
-        placeholder="กรอก password"
-        autocomplete="current-password"
-      >
+      <input id="passwordInput" type="password" placeholder="กรอก password" autocomplete="current-password">
     </div>
 
     <button class="login-btn" onclick="login()">เข้าสู่ระบบ</button>
-
-    <div class="small-note">
-      ค่าเริ่มต้น: admin / 123456
-    </div>
   </div>
 </div>
 
-<!-- หน้า Admin -->
 <div id="adminPage" class="admin-page">
   <div class="admin-header">
     <h1>Admin - รายงานตำแหน่ง</h1>
@@ -340,27 +316,15 @@
 </div>
 
 <script>
-/*
-  ==============================
-  ตั้งค่าหลัก
-  ==============================
-*/
-
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZ-k3z04ucaDPpiVeJvNncp3VCFxDpSEUfPRDameTpgGBhqYsM1vv2Lok_RA88HHj7iw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdJ26u1KPB-Nmu0CwAK3hw4p97uMvYWHhXJlh_uWye36AO2j4o7haHu3HXGfh08EKCcg/exec";
 
 const ADMIN_KEY = "123456";
 
 const LOGIN_USERNAME = "admin";
-const LOGIN_PASSWORD = "1560";
+const LOGIN_PASSWORD = "123456";
 
 const LOGIN_STORAGE_KEY = "admin_location_logged_in";
 const LOGIN_USER_KEY = "admin_location_username";
-
-/*
-  ==============================
-  ตัวแปร DOM
-  ==============================
-*/
 
 const loginPage = document.getElementById("loginPage");
 const adminPage = document.getElementById("adminPage");
@@ -371,12 +335,6 @@ const loginInfo = document.getElementById("loginInfo");
 
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("list");
-
-/*
-  ==============================
-  ระบบ Login
-  ==============================
-*/
 
 function checkLogin() {
   const loggedIn = localStorage.getItem(LOGIN_STORAGE_KEY);
@@ -446,17 +404,6 @@ passwordInput.addEventListener("keydown", function(e) {
   }
 });
 
-/*
-  ==============================
-  Helper
-  ==============================
-*/
-
-function val(v) {
-  if (v === null || v === undefined || v === "") return "-";
-  return v;
-}
-
 function escapeHtml(text) {
   return String(text || "")
     .replaceAll("&", "&amp;")
@@ -487,12 +434,6 @@ function formatValue(v) {
   return v;
 }
 
-/*
-  ==============================
-  JSONP สำหรับโหลดข้อมูลจาก Apps Script
-  ==============================
-*/
-
 function jsonp(url) {
   return new Promise((resolve, reject) => {
     const callbackName =
@@ -505,11 +446,12 @@ function jsonp(url) {
     const finalUrl = url + separator + "callback=" + encodeURIComponent(callbackName);
 
     const script = document.createElement("script");
+    let called = false;
 
     const timer = setTimeout(() => {
       cleanup();
-      reject(new Error("หมดเวลาโหลดข้อมูล หรือ Apps Script ไม่ได้ตอบกลับแบบ JSONP"));
-    }, 15000);
+      reject(new Error("หมดเวลาโหลดข้อมูล ลองเปิดลิงก์นี้ดู: " + finalUrl));
+    }, 20000);
 
     function cleanup() {
       clearTimeout(timer);
@@ -526,27 +468,28 @@ function jsonp(url) {
     }
 
     window[callbackName] = function(data) {
+      called = true;
       cleanup();
       resolve(data);
     };
 
-    script.src = finalUrl;
-    script.async = true;
+    script.onload = function() {
+      if (!called) {
+        cleanup();
+        reject(new Error("โหลด Apps Script ได้ แต่ไม่ได้ตอบกลับ callback ลองเปิดลิงก์นี้ดู: " + finalUrl));
+      }
+    };
 
     script.onerror = function() {
       cleanup();
-      reject(new Error("โหลด URL Apps Script ไม่สำเร็จ ตรวจสอบ Deploy / Anyone access / SCRIPT_URL"));
+      reject(new Error("โหลด URL Apps Script ไม่สำเร็จ ลองเปิดลิงก์นี้ดู: " + finalUrl));
     };
 
+    script.src = finalUrl;
+    script.async = true;
     document.body.appendChild(script);
   });
 }
-
-/*
-  ==============================
-  โหลดข้อมูล
-  ==============================
-*/
 
 async function loadData() {
   statusEl.textContent = "กำลังโหลดข้อมูล...";
@@ -589,12 +532,6 @@ async function loadData() {
   }
 }
 
-/*
-  ==============================
-  ล้างข้อมูล
-  ==============================
-*/
-
 async function clearData() {
   const ok = confirm("ต้องการล้างข้อมูลทั้งหมดจริงไหม?");
   if (!ok) return;
@@ -631,23 +568,20 @@ async function clearData() {
   }
 }
 
-/*
-  ==============================
-  แสดงรายการ
-  ==============================
-*/
-
 function renderCard(row, index) {
   const maps = row["Google Maps"] || "";
   const jsonText = row["ข้อมูลทั้งหมด JSON"] || "";
 
   return `
     <div class="card">
-      <h2>#${index + 1} ${escapeHtml(formatValue(row["ชื่อเครื่อง"]) || "-")}</h2>
+      <h2>#${index + 1} ${escapeHtml(formatValue(row["ชื่อเครื่อง"]))}</h2>
 
       <div class="grid">
         <div class="label">เวลา</div>
         <div>${escapeHtml(formatValue(row["เวลา"]))}</div>
+
+        <div class="label">ชื่อเครื่อง</div>
+        <div>${escapeHtml(formatValue(row["ชื่อเครื่อง"]))}</div>
 
         <div class="label">ระบบ</div>
         <div>${escapeHtml(formatValue(row["ระบบ"]))}</div>
@@ -766,7 +700,6 @@ function renderCard(row, index) {
   `;
 }
 
-// เริ่มทำงาน
 checkLogin();
 </script>
 
