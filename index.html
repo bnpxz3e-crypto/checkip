@@ -226,16 +226,9 @@ async function submitLocation() {
   try {
     statusEl.innerHTML = "กำลังส่งข้อมูลไปยังผู้ดูแล...";
 
-    const result = await sendToSheetByJsonp(data);
-
-    if (result && result.ok) {
-      statusEl.innerHTML = "<span class='ok'>ส่งข้อมูลสำเร็จ</span>";
-    } else {
-      statusEl.innerHTML =
-        "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " +
-        escapeHtml(result && result.error ? result.error : "ไม่ทราบสาเหตุ");
-    }
-
+    await sendToSheetByForm(data);
+statusEl.innerHTML = "<span class='ok'>ส่งข้อมูลสำเร็จ</span>";
+    
   } catch (err) {
     statusEl.innerHTML =
       "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " + escapeHtml(String(err));
@@ -510,57 +503,66 @@ async function reverseGeocode(lat, lng) {
   ส่งข้อมูลแบบ JSONP GET
   วิธีนี้รู้ผลจริงกว่า sendBeacon / no-cors
 */
-function sendToSheetByJsonp(data) {
+function sendToSheetByForm(data) {
   return new Promise((resolve, reject) => {
-    const callbackName =
-      "jsonp_save_" +
+    const payload = encodePayload(data);
+
+    const iframeName =
+      "hidden_iframe_" +
       Date.now() +
       "_" +
       Math.floor(Math.random() * 999999);
 
-    const payload = encodePayload(data);
+    const iframe = document.createElement("iframe");
+    iframe.name = iframeName;
+    iframe.style.display = "none";
 
-    const url =
-      SCRIPT_URL +
-      "?action=save" +
-      "&key=" + encodeURIComponent(ADMIN_KEY) +
-      "&payload=" + encodeURIComponent(payload) +
-      "&callback=" + encodeURIComponent(callbackName);
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = SCRIPT_URL;
+    form.target = iframeName;
+    form.style.display = "none";
 
-    const script = document.createElement("script");
+    const inputPayload = document.createElement("input");
+    inputPayload.type = "hidden";
+    inputPayload.name = "payload";
+    inputPayload.value = payload;
+
+    form.appendChild(inputPayload);
+
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
 
     const timer = setTimeout(() => {
       cleanup();
       reject(new Error("ส่งข้อมูลหมดเวลา"));
     }, 20000);
 
+    let loaded = false;
+
+    iframe.onload = function() {
+      if (loaded) return;
+      loaded = true;
+
+      setTimeout(() => {
+        cleanup();
+        resolve(true);
+      }, 800);
+    };
+
     function cleanup() {
       clearTimeout(timer);
 
-      try {
-        delete window[callbackName];
-      } catch (e) {
-        window[callbackName] = undefined;
+      if (form.parentNode) {
+        form.parentNode.removeChild(form);
       }
 
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
       }
     }
 
-    window[callbackName] = function(res) {
-      cleanup();
-      resolve(res);
-    };
-
-    script.onerror = function() {
-      cleanup();
-      reject(new Error("โหลด Apps Script ไม่สำเร็จ"));
-    };
-
-    script.src = url;
-    script.async = true;
-    document.body.appendChild(script);
+    form.submit();
   });
 }
 
