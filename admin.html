@@ -17,18 +17,63 @@
       background: #0f172a;
       color: #ffffff;
       padding: 20px;
+      min-height: 100vh;
     }
 
     h1 {
       margin: 0 0 14px;
       font-size: 26px;
+      color: #ffffff;
     }
 
-    .top {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
+    .wrap {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .login-box,
+    .status,
+    .list-card,
+    .detail-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .login-box {
+      max-width: 420px;
+      margin: 70px auto 0;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #86efac;
+      margin-bottom: 10px;
+    }
+
+    .login-desc {
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      background: #020617;
+      color: #ffffff;
+      font-size: 17px;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    input:focus {
+      border-color: #22c55e;
     }
 
     button {
@@ -39,10 +84,22 @@
       color: #ffffff;
       cursor: pointer;
       font-weight: bold;
+      font-size: 15px;
     }
 
     button:hover {
       background: #16a34a;
+    }
+
+    button:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+
+    .btn-full {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
     }
 
     .danger {
@@ -53,39 +110,105 @@
       background: #dc2626;
     }
 
+    .secondary {
+      background: #334155;
+    }
+
+    .secondary:hover {
+      background: #475569;
+    }
+
+    .top {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
     .status {
       margin-bottom: 16px;
       color: #cbd5e1;
       background: #020617;
-      border: 1px solid #334155;
-      padding: 12px;
-      border-radius: 10px;
     }
 
-    .grid {
-      display: grid;
-      gap: 14px;
+    .admin-page {
+      display: none;
     }
 
-    .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    .list-card {
+      padding: 0;
+      overflow: hidden;
     }
 
-    .card h2 {
-      margin: 0 0 10px;
-      font-size: 20px;
+    .item-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      color: #ffffff;
+      padding: 16px 18px;
+      text-align: left;
+      border-radius: 0;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .item-btn:hover {
+      background: #0f172a;
+    }
+
+    .item-left {
+      min-width: 0;
+    }
+
+    .item-title {
+      font-size: 21px;
+      font-weight: bold;
+      color: #86efac;
+      margin-bottom: 5px;
+    }
+
+    .item-sub {
+      color: #cbd5e1;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .item-arrow {
+      color: #94a3b8;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .detail-card {
+      display: none;
+      margin-top: 16px;
+    }
+
+    .detail-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .detail-title {
+      font-size: 24px;
+      font-weight: bold;
       color: #86efac;
     }
 
     .row {
       display: grid;
-      grid-template-columns: 170px 1fr;
+      grid-template-columns: 180px 1fr;
       gap: 8px;
-      padding: 7px 0;
+      padding: 9px 0;
       border-bottom: 1px solid rgba(148, 163, 184, 0.18);
     }
 
@@ -101,6 +224,7 @@
     .value {
       color: #ffffff;
       word-break: break-word;
+      line-height: 1.5;
     }
 
     a {
@@ -115,22 +239,41 @@
       border: 1px solid #334155;
     }
 
+    .login-error {
+      display: none;
+      color: #fca5a5;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
     @media (max-width: 700px) {
       body {
         padding: 14px;
-      }
-
-      .row {
-        grid-template-columns: 1fr;
-        gap: 3px;
       }
 
       h1 {
         font-size: 22px;
       }
 
-      button {
+      .top button {
         width: 100%;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .item-title {
+        font-size: 20px;
+      }
+
+      .detail-title {
+        font-size: 22px;
       }
     }
   </style>
@@ -138,31 +281,150 @@
 
 <body>
 
-<h1>Admin - รายงานตำแหน่ง</h1>
+<div class="wrap">
 
-<div class="top">
-  <button onclick="loadData()">โหลดข้อมูล</button>
-  <button class="danger" onclick="clearData()">ล้างข้อมูลทั้งหมด</button>
+  <div id="loginPage" class="login-box">
+    <div class="login-title">เข้าสู่ระบบ Admin</div>
+    <div class="login-desc">
+      กรุณากรอก Username และ Password เพื่อดูรายงานตำแหน่งเครื่อง
+    </div>
+
+    <input
+      id="usernameInput"
+      type="text"
+      placeholder="Username"
+      autocomplete="username"
+      onkeydown="handleLoginEnter(event)"
+    />
+
+    <input
+      id="passwordInput"
+      type="password"
+      placeholder="Password"
+      autocomplete="current-password"
+      onkeydown="handleLoginEnter(event)"
+    />
+
+    <button class="btn-full" onclick="loginAdmin()">เข้าสู่ระบบ</button>
+
+    <div id="loginError" class="login-error">
+      Username หรือ Password ไม่ถูกต้อง
+    </div>
+  </div>
+
+  <div id="adminPage" class="admin-page">
+    <h1>Admin - รายงานตำแหน่ง</h1>
+
+    <div class="top">
+      <button onclick="loadData()">โหลดข้อมูล</button>
+      <button class="secondary" onclick="logoutAdmin()">ออกจากระบบ</button>
+      <button class="danger" onclick="clearData()">ล้างข้อมูลทั้งหมด</button>
+    </div>
+
+    <div id="status" class="status">พร้อมใช้งาน</div>
+
+    <div id="list" class="list-card"></div>
+
+    <div id="detail" class="detail-card"></div>
+  </div>
+
 </div>
-
-<div id="status" class="status">พร้อมใช้งาน</div>
-
-<div id="list" class="grid"></div>
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzU3eYKkKfd6pxV4q0Asx2mLRsoRZxe60Er_33fnD9wFk4obVDqqbooKsf6irVUssHz/exec";
+
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "1560";
+
+/*
+  ตัวนี้ต้องตรงกับ ADMIN_KEY ใน Code.gs
+  ถ้า Code.gs ยังเป็น 123456 ก็ไม่ต้องแก้
+*/
 const ADMIN_KEY = "123456";
+
+const loginPage = document.getElementById("loginPage");
+const adminPage = document.getElementById("adminPage");
+
+const usernameInput = document.getElementById("usernameInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginError = document.getElementById("loginError");
 
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("list");
+const detailEl = document.getElementById("detail");
+
+let allRows = [];
 
 window.addEventListener("load", function() {
-  loadData();
+  const loggedIn = localStorage.getItem("admin_logged_in");
+
+  if (loggedIn === "yes") {
+    showAdminPage();
+    loadData();
+  } else {
+    showLoginPage();
+  }
 });
+
+function handleLoginEnter(event) {
+  if (event.key === "Enter") {
+    loginAdmin();
+  }
+}
+
+function loginAdmin() {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    loginError.style.display = "block";
+    loginError.textContent = "Username หรือ Password ไม่ถูกต้อง";
+
+    passwordInput.value = "";
+    passwordInput.focus();
+    return;
+  }
+
+  localStorage.setItem("admin_logged_in", "yes");
+  loginError.style.display = "none";
+
+  showAdminPage();
+  loadData();
+}
+
+function logoutAdmin() {
+  localStorage.removeItem("admin_logged_in");
+
+  allRows = [];
+  listEl.innerHTML = "";
+  detailEl.innerHTML = "";
+  detailEl.style.display = "none";
+
+  usernameInput.value = "";
+  passwordInput.value = "";
+
+  showLoginPage();
+}
+
+function showLoginPage() {
+  loginPage.style.display = "block";
+  adminPage.style.display = "none";
+
+  setTimeout(function() {
+    usernameInput.focus();
+  }, 200);
+}
+
+function showAdminPage() {
+  loginPage.style.display = "none";
+  adminPage.style.display = "block";
+}
 
 function loadData() {
   statusEl.textContent = "กำลังโหลดข้อมูล...";
   listEl.innerHTML = "";
+  detailEl.innerHTML = "";
+  detailEl.style.display = "none";
 
   callScript("list")
     .then(function(res) {
@@ -170,8 +432,9 @@ function loadData() {
         throw new Error(res && res.error ? res.error : "โหลดข้อมูลไม่สำเร็จ");
       }
 
-      renderRows(res.rows || []);
-      statusEl.textContent = "พบข้อมูล " + (res.rows || []).length + " รายการ";
+      allRows = res.rows || [];
+      renderList(allRows);
+      statusEl.textContent = "พบข้อมูล " + allRows.length + " รายการ";
     })
     .catch(function(err) {
       statusEl.textContent = "โหลดข้อมูลไม่สำเร็จ: " + String(err);
@@ -183,6 +446,18 @@ function clearData() {
 
   if (!ok) return;
 
+  const username = prompt("กรอก Username เพื่อยืนยัน");
+  if (username !== ADMIN_USERNAME) {
+    alert("Username ไม่ถูกต้อง");
+    return;
+  }
+
+  const password = prompt("กรอก Password เพื่อยืนยัน");
+  if (password !== ADMIN_PASSWORD) {
+    alert("Password ไม่ถูกต้อง");
+    return;
+  }
+
   statusEl.textContent = "กำลังล้างข้อมูล...";
 
   callScript("clear")
@@ -192,6 +467,8 @@ function clearData() {
       }
 
       statusEl.textContent = "ล้างข้อมูลทั้งหมดแล้ว";
+      detailEl.innerHTML = "";
+      detailEl.style.display = "none";
       loadData();
     })
     .catch(function(err) {
@@ -250,7 +527,7 @@ function callScript(action) {
   });
 }
 
-function renderRows(rows) {
+function renderList(rows) {
   listEl.innerHTML = "";
 
   if (!rows || rows.length === 0) {
@@ -259,61 +536,141 @@ function renderRows(rows) {
   }
 
   rows.forEach(function(row, index) {
-    const card = document.createElement("div");
-    card.className = "card";
+    const btn = document.createElement("button");
+    btn.className = "item-btn";
+    btn.onclick = function() {
+      showDetail(index);
+    };
 
-    const title = document.createElement("h2");
-    title.textContent = "#" + (index + 1) + " - " + safeText(row["ชื่อเครื่อง"] || "-");
-    card.appendChild(title);
+    const left = document.createElement("div");
+    left.className = "item-left";
 
-    addRow(card, "เวลา", row["เวลา"]);
-    addRow(card, "ชื่อเครื่อง", row["ชื่อเครื่อง"]);
-    addRow(card, "ระบบ", row["ระบบ"]);
-    addRow(card, "เบราว์เซอร์", row["เบราว์เซอร์"]);
-    addRow(card, "ภาษาเครื่อง", row["ภาษาเครื่อง"]);
-    addRow(card, "ขนาดจอ", row["ขนาดจอ"]);
-    addRow(card, "Timezone Browser", row["Timezone Browser"]);
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = (index + 1) + ". " + getDeviceTitle(row);
 
-    addRow(card, "GPS Latitude", row["GPS Latitude"]);
-    addRow(card, "GPS Longitude", row["GPS Longitude"]);
-    addRow(card, "ความแม่นยำ", row["ความแม่นยำ"]);
-    addRow(card, "Altitude", row["Altitude"]);
-    addRow(card, "Speed", row["Speed"]);
-    addRow(card, "Heading", row["Heading"]);
-    addRow(card, "GPS Error", row["GPS Error"]);
+    const sub = document.createElement("div");
+    sub.className = "item-sub";
 
-    addMapRow(card, "Google Maps", row["Google Maps"]);
+    const ip = row["IP"] || "-";
+    const country = row["ประเทศ IP"] || "-";
+    const time = row["เวลา"] || "-";
+    const gpsError = row["GPS Error"] || "";
 
-    addRow(card, "ที่อยู่ GPS", row["ที่อยู่เต็มจาก GPS"]);
-    addRow(card, "ประเทศ GPS", row["ประเทศ GPS"]);
-    addRow(card, "จังหวัด GPS", row["จังหวัด GPS"]);
-    addRow(card, "อำเภอ GPS", row["อำเภอ GPS"]);
-    addRow(card, "ตำบล GPS", row["ตำบล GPS"]);
-    addRow(card, "รหัสไปรษณีย์ GPS", row["รหัสไปรษณีย์ GPS"]);
+    sub.textContent =
+      "เวลา: " + time +
+      " | IP: " + ip +
+      " | ประเทศ: " + country +
+      (gpsError ? " | GPS: " + gpsError : "");
 
-    addRow(card, "IP", row["IP"]);
-    addRow(card, "ประเทศ IP", row["ประเทศ IP"]);
-    addRow(card, "รหัสประเทศ IP", row["รหัสประเทศ IP"]);
-    addRow(card, "จังหวัด/Region IP", row["จังหวัด/Region IP"]);
-    addRow(card, "เมือง IP", row["เมือง IP"]);
-    addRow(card, "รหัสไปรษณีย์ IP", row["รหัสไปรษณีย์ IP"]);
-    addRow(card, "Latitude IP", row["Latitude IP"]);
-    addRow(card, "Longitude IP", row["Longitude IP"]);
-    addRow(card, "ผู้ให้บริการ IP", row["ผู้ให้บริการ IP"]);
-    addRow(card, "ASN IP", row["ASN IP"]);
-    addRow(card, "Timezone IP", row["Timezone IP"]);
-    addRow(card, "IP API", row["IP API"]);
-    addRow(card, "IP Error", row["IP Error"]);
-    addRow(card, "IP Note", row["IP Note"]);
+    const arrow = document.createElement("div");
+    arrow.className = "item-arrow";
+    arrow.textContent = "›";
 
-    addRow(card, "เวลาที่ส่งจากเครื่อง", row["เวลาที่ส่งจากเครื่อง"]);
-    addRow(card, "User Agent", row["User Agent"]);
+    left.appendChild(title);
+    left.appendChild(sub);
 
-    listEl.appendChild(card);
+    btn.appendChild(left);
+    btn.appendChild(arrow);
+
+    listEl.appendChild(btn);
   });
 }
 
-function addRow(card, label, value) {
+function getDeviceTitle(row) {
+  const name = row["ชื่อเครื่อง"] || "";
+  const system = row["ระบบ"] || "";
+
+  if (name) return name;
+  if (system) return system;
+
+  return "Unknown Device";
+}
+
+function showDetail(index) {
+  const row = allRows[index];
+
+  if (!row) return;
+
+  detailEl.innerHTML = "";
+  detailEl.style.display = "block";
+
+  const head = document.createElement("div");
+  head.className = "detail-head";
+
+  const title = document.createElement("div");
+  title.className = "detail-title";
+  title.textContent = "#" + (index + 1) + " - " + getDeviceTitle(row);
+
+  const backBtn = document.createElement("button");
+  backBtn.className = "secondary";
+  backBtn.textContent = "ซ่อนรายละเอียด";
+  backBtn.onclick = function() {
+    detailEl.style.display = "none";
+    detailEl.innerHTML = "";
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  };
+
+  head.appendChild(title);
+  head.appendChild(backBtn);
+  detailEl.appendChild(head);
+
+  addRow(detailEl, "เวลา", row["เวลา"]);
+  addRow(detailEl, "ชื่อเครื่อง", row["ชื่อเครื่อง"]);
+  addRow(detailEl, "ระบบ", row["ระบบ"]);
+  addRow(detailEl, "เบราว์เซอร์", row["เบราว์เซอร์"]);
+  addRow(detailEl, "ภาษาเครื่อง", row["ภาษาเครื่อง"]);
+  addRow(detailEl, "ขนาดจอ", row["ขนาดจอ"]);
+  addRow(detailEl, "Timezone Browser", row["Timezone Browser"]);
+
+  addRow(detailEl, "GPS Latitude", row["GPS Latitude"]);
+  addRow(detailEl, "GPS Longitude", row["GPS Longitude"]);
+  addRow(detailEl, "ความแม่นยำ", row["ความแม่นยำ"]);
+  addRow(detailEl, "Altitude", row["Altitude"]);
+  addRow(detailEl, "Speed", row["Speed"]);
+  addRow(detailEl, "Heading", row["Heading"]);
+  addRow(detailEl, "GPS Error", row["GPS Error"]);
+
+  addMapRow(detailEl, "Google Maps", row["Google Maps"]);
+
+  addRow(detailEl, "ที่อยู่ GPS", row["ที่อยู่เต็มจาก GPS"]);
+  addRow(detailEl, "ประเทศ GPS", row["ประเทศ GPS"]);
+  addRow(detailEl, "จังหวัด GPS", row["จังหวัด GPS"]);
+  addRow(detailEl, "อำเภอ GPS", row["อำเภอ GPS"]);
+  addRow(detailEl, "ตำบล GPS", row["ตำบล GPS"]);
+  addRow(detailEl, "รหัสไปรษณีย์ GPS", row["รหัสไปรษณีย์ GPS"]);
+
+  addRow(detailEl, "IP", row["IP"]);
+  addRow(detailEl, "ประเทศ IP", row["ประเทศ IP"]);
+  addRow(detailEl, "รหัสประเทศ IP", row["รหัสประเทศ IP"]);
+  addRow(detailEl, "จังหวัด/Region IP", row["จังหวัด/Region IP"]);
+  addRow(detailEl, "เมือง IP", row["เมือง IP"]);
+  addRow(detailEl, "รหัสไปรษณีย์ IP", row["รหัสไปรษณีย์ IP"]);
+  addRow(detailEl, "Latitude IP", row["Latitude IP"]);
+  addRow(detailEl, "Longitude IP", row["Longitude IP"]);
+  addRow(detailEl, "ผู้ให้บริการ IP", row["ผู้ให้บริการ IP"]);
+  addRow(detailEl, "ASN IP", row["ASN IP"]);
+  addRow(detailEl, "Timezone IP", row["Timezone IP"]);
+  addRow(detailEl, "IP API", row["IP API"]);
+  addRow(detailEl, "IP Error", row["IP Error"]);
+  addRow(detailEl, "IP Note", row["IP Note"]);
+
+  addRow(detailEl, "เวลาที่ส่งจากเครื่อง", row["เวลาที่ส่งจากเครื่อง"]);
+  addRow(detailEl, "User Agent", row["User Agent"]);
+  addJsonRow(detailEl, "ข้อมูลทั้งหมด JSON", row["ข้อมูลทั้งหมด JSON"]);
+
+  setTimeout(function() {
+    detailEl.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 100);
+}
+
+function addRow(parent, label, value) {
   const div = document.createElement("div");
   div.className = "row";
 
@@ -328,10 +685,10 @@ function addRow(card, label, value) {
   div.appendChild(labelDiv);
   div.appendChild(valueDiv);
 
-  card.appendChild(div);
+  parent.appendChild(div);
 }
 
-function addMapRow(card, label, value) {
+function addMapRow(parent, label, value) {
   const div = document.createElement("div");
   div.className = "row";
 
@@ -356,11 +713,45 @@ function addMapRow(card, label, value) {
   div.appendChild(labelDiv);
   div.appendChild(valueDiv);
 
-  card.appendChild(div);
+  parent.appendChild(div);
 }
 
-function safeText(text) {
-  return String(text || "");
+function addJsonRow(parent, label, value) {
+  const div = document.createElement("div");
+  div.className = "row";
+
+  const labelDiv = document.createElement("div");
+  labelDiv.className = "label";
+  labelDiv.textContent = label;
+
+  const valueDiv = document.createElement("div");
+  valueDiv.className = "value";
+
+  if (!value) {
+    valueDiv.textContent = "-";
+  } else {
+    const pre = document.createElement("pre");
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.wordBreak = "break-word";
+    pre.style.margin = "0";
+    pre.style.fontFamily = "Arial, Tahoma, sans-serif";
+    pre.textContent = prettyJson(value);
+    valueDiv.appendChild(pre);
+  }
+
+  div.appendChild(labelDiv);
+  div.appendChild(valueDiv);
+
+  parent.appendChild(div);
+}
+
+function prettyJson(value) {
+  try {
+    const obj = JSON.parse(value);
+    return JSON.stringify(obj, null, 2);
+  } catch (e) {
+    return String(value);
+  }
 }
 </script>
 
