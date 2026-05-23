@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>ตรวจสอบข้อมูลเครื่อง</title>
+  <title>ตรวจสอบตำแหน่งเครื่อง</title>
 
   <style>
     * {
@@ -14,53 +14,45 @@
     body {
       margin: 0;
       font-family: Arial, Tahoma, sans-serif;
-      background: linear-gradient(135deg, #020617, #111827, #1e293b);
+      background: #0f172a;
       color: #ffffff;
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 18px;
+      padding: 20px;
     }
 
-    .box {
-      width: 100%;
-      max-width: 900px;
-      background: #0f172a;
-      padding: 28px;
-      border-radius: 24px;
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.35);
     }
 
     h1 {
-      margin: 0 0 12px;
-      text-align: center;
-      font-size: 34px;
-      line-height: 1.25;
-      color: #ffffff;
+      margin: 0 0 10px;
+      font-size: 26px;
+      color: #86efac;
     }
 
     .desc {
       color: #cbd5e1;
-      text-align: center;
       line-height: 1.7;
-      margin-bottom: 22px;
-      font-size: 20px;
+      margin-bottom: 18px;
+      font-size: 15px;
     }
 
     button {
       width: 100%;
-      padding: 22px;
-      font-size: 28px;
+      padding: 15px 18px;
       border: none;
-      border-radius: 18px;
+      border-radius: 12px;
       background: #22c55e;
-      color: white;
-      cursor: pointer;
+      color: #ffffff;
+      font-size: 16px;
       font-weight: bold;
-      transition: 0.2s;
-      box-shadow: 0 12px 25px rgba(34, 197, 94, 0.28);
+      cursor: pointer;
     }
 
     button:hover {
@@ -70,54 +62,87 @@
     button:disabled {
       background: #64748b;
       cursor: not-allowed;
-      box-shadow: none;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 13px;
+      border-radius: 12px;
+      background: #020617;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .ok {
+      color: #86efac;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #fca5a5;
+      font-weight: bold;
     }
 
     .result {
-      margin-top: 24px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      gap: 8px;
       background: #020617;
-      padding: 24px;
-      border-radius: 18px;
-      white-space: pre-wrap;
-      line-height: 1.7;
-      overflow-x: auto;
-      min-height: 240px;
-      font-size: 28px;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .label {
+      color: #cbd5e1;
       font-weight: bold;
-      color: #f8fafc;
-      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .small {
-      margin-top: 14px;
-      font-size: 15px;
-      color: #94a3b8;
-      line-height: 1.6;
-      text-align: center;
+    a {
+      color: #38bdf8;
+      word-break: break-all;
     }
 
-    @media (max-width: 600px) {
-      .box {
-        padding: 20px;
-        border-radius: 18px;
+    pre {
+      background: #020617;
+      color: #ffffff;
+      padding: 12px;
+      border-radius: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      font-size: 12px;
+      border: 1px solid #334155;
+      max-height: 300px;
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 14px;
+      }
+
+      .container {
+        padding: 18px;
       }
 
       h1 {
-        font-size: 28px;
+        font-size: 22px;
       }
 
-      .desc {
-        font-size: 17px;
+      .grid {
+        grid-template-columns: 1fr;
       }
 
-      button {
-        font-size: 23px;
-        padding: 20px;
-      }
-
-      .result {
-        font-size: 23px;
-        padding: 18px;
+      .label {
+        margin-top: 8px;
       }
     }
   </style>
@@ -125,387 +150,537 @@
 
 <body>
 
-<div class="box">
-  <h1>ตรวจสอบข้อมูลเครื่อง</h1>
+<div class="container">
+  <h1>ตรวจสอบตำแหน่งเครื่อง</h1>
 
   <div class="desc">
-    กดปุ่มเพื่อดึงชื่อเครื่อง และข้อมูล IP / VPN
+    เมื่อกดปุ่ม ระบบจะขออนุญาตเข้าถึงตำแหน่ง GPS จากเครื่องนี้<br>
+    ถ้าอนุญาต ระบบจะส่งตำแหน่ง GPS และข้อมูลอุปกรณ์ไปยังผู้ดูแล<br>
+    ถ้าไม่อนุญาต ระบบจะส่งข้อมูลพร้อมข้อความ error แทน
   </div>
 
-  <button id="btn" onclick="sendLocation()">
-    กดเพื่อตรวจสอบ
+  <button id="sendBtn" onclick="submitLocation()">
+    กดเพื่อส่งตำแหน่งเครื่องนี้
   </button>
 
-  <div class="small">
-    ระบบจะแสดงชื่อเครื่อง และตำแหน่งโดยประมาณจาก IP
+  <div id="status" class="status">
+    พร้อมใช้งาน
   </div>
 
-  <div id="result" class="result">ยังไม่มีข้อมูล</div>
+  <div id="result" class="result">
+    <h3>ข้อมูลที่ส่ง</h3>
+    <div id="resultGrid" class="grid"></div>
+    <h3>JSON</h3>
+    <pre id="jsonBox"></pre>
+  </div>
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxko8G7j9uAGrrpHPrcGww7y9bvREgA2sBcbzxphsHkJkrv-OCPWFA3LSNsAg-LG7BowA/exec";
+/*
+  ==============================
+  ตั้งค่า
+  ==============================
+*/
 
-const btn = document.getElementById("btn");
-const result = document.getElementById("result");
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZ-k3z04ucaDPpiVeJvNncp3VCFxDpSEUfPRDameTpgGBhqYsM1vv2Lok_RA88HHj7iw/exec";
 
-function val(v) {
-  if (v === null || v === undefined || v === "") return "-";
-  return v;
+const sendBtn = document.getElementById("sendBtn");
+const statusEl = document.getElementById("status");
+const resultEl = document.getElementById("result");
+const resultGrid = document.getElementById("resultGrid");
+const jsonBox = document.getElementById("jsonBox");
+
+/*
+  ==============================
+  ปุ่มหลัก
+  ==============================
+*/
+
+async function submitLocation() {
+  sendBtn.disabled = true;
+  statusEl.innerHTML = "กำลังตรวจสอบข้อมูลเครื่อง...";
+
+  const data = createBaseData();
+
+  try {
+    statusEl.innerHTML = "กำลังตรวจสอบ IP...";
+    const ipData = await getIpInfo();
+
+    Object.assign(data, ipData);
+
+  } catch (err) {
+    data.ip_error = String(err);
+    data.ip_note = "ดึงข้อมูล IP ไม่สำเร็จ";
+  }
+
+  try {
+    statusEl.innerHTML = "กำลังขออนุญาต GPS...";
+
+    const gpsData = await getGpsInfo();
+
+    Object.assign(data, gpsData);
+
+    if (data.gps_latitude && data.gps_longitude) {
+      statusEl.innerHTML = "กำลังแปลงที่อยู่จาก GPS...";
+
+      try {
+        const addressData = await reverseGeocode(data.gps_latitude, data.gps_longitude);
+        Object.assign(data, addressData);
+      } catch (addrErr) {
+        data.full_address = "";
+        data.country_gps = "";
+        data.province_gps = "";
+        data.district_gps = "";
+        data.subdistrict_gps = "";
+        data.postcode_gps = "";
+      }
+    }
+
+  } catch (err) {
+    data.gps_error = String(err);
+  }
+
+  data.sent_at = new Date().toLocaleString("th-TH", {
+    timeZone: "Asia/Bangkok"
+  });
+
+  showResult(data);
+
+  try {
+    statusEl.innerHTML = "กำลังส่งข้อมูลไปยังผู้ดูแล...";
+    await sendToSheet(data);
+
+    statusEl.innerHTML = "<span class='ok'>ส่งข้อมูลสำเร็จ</span>";
+  } catch (err) {
+    statusEl.innerHTML =
+      "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " + escapeHtml(String(err));
+  }
+
+  sendBtn.disabled = false;
+}
+
+/*
+  ==============================
+  ข้อมูลเครื่องพื้นฐาน
+  ==============================
+*/
+
+function createBaseData() {
+  return {
+    device_name: getDeviceName(),
+    platform: navigator.platform || "",
+    browser: getBrowserName(),
+    user_agent: navigator.userAgent || "",
+    language: navigator.language || "",
+    screen: window.screen.width + "x" + window.screen.height,
+    timezone_browser: getBrowserTimezone(),
+
+    gps_latitude: "",
+    gps_longitude: "",
+    gps_accuracy: "",
+    gps_altitude: "",
+    gps_speed: "",
+    gps_heading: "",
+    gps_error: "",
+    google_maps: "",
+
+    full_address: "",
+    country_gps: "",
+    province_gps: "",
+    district_gps: "",
+    subdistrict_gps: "",
+    postcode_gps: "",
+
+    ip: "",
+    ip_country: "",
+    ip_country_code: "",
+    ip_region: "",
+    ip_city: "",
+    ip_postal: "",
+    ip_latitude: "",
+    ip_longitude: "",
+    ip_org: "",
+    ip_asn: "",
+    ip_timezone: "",
+    ip_source_api: "",
+    ip_error: "",
+    ip_note: "",
+
+    sent_at: ""
+  };
 }
 
 function getDeviceName() {
-  const ua = navigator.userAgent;
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
 
   if (/iPhone/i.test(ua)) return "iPhone";
   if (/iPad/i.test(ua)) return "iPad";
-  if (/Android/i.test(ua)) return "Android";
-  if (/Windows/i.test(ua)) return "Windows PC";
-  if (/Macintosh|Mac OS/i.test(ua)) return "Mac";
-  if (/Linux/i.test(ua)) return "Linux";
+  if (/Android/i.test(ua)) return "Android Phone";
+  if (/Win/i.test(platform)) return "Windows PC";
+  if (/Mac/i.test(platform)) return "Mac";
+  if (/Linux/i.test(platform)) return "Linux PC";
 
   return "Unknown Device";
 }
 
 function getBrowserName() {
-  const ua = navigator.userAgent;
+  const ua = navigator.userAgent || "";
 
   if (ua.includes("Edg")) return "Microsoft Edge";
   if (ua.includes("OPR") || ua.includes("Opera")) return "Opera";
-  if (ua.includes("Chrome") && !ua.includes("CriOS")) return "Google Chrome";
-  if (ua.includes("CriOS")) return "Chrome iOS";
   if (ua.includes("Firefox")) return "Firefox";
+  if (ua.includes("Chrome")) return "Google Chrome";
   if (ua.includes("Safari")) return "Safari";
 
-  return "Unknown Browser";
+  return "Unknown";
 }
 
 function getBrowserTimezone() {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  } catch {
+  } catch (e) {
     return "";
   }
 }
 
-function base64UrlEncode(str) {
-  const utf8 = unescape(encodeURIComponent(str));
-  const base64 = btoa(utf8);
-
-  return base64
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-function getCountryFullName(countryName, countryCode) {
-  const code = String(countryCode || "").toUpperCase();
-  const name = String(countryName || "").trim();
-
-  const countryMap = {
-    TH: "ประเทศไทย",
-    SG: "สิงคโปร์",
-    LA: "ลาว",
-    KH: "กัมพูชา",
-    MM: "เมียนมา",
-    VN: "เวียดนาม",
-    MY: "มาเลเซีย",
-    ID: "อินโดนีเซีย",
-    PH: "ฟิลิปปินส์",
-    CN: "จีน",
-    HK: "ฮ่องกง",
-    TW: "ไต้หวัน",
-    JP: "ญี่ปุ่น",
-    KR: "เกาหลีใต้",
-    US: "สหรัฐอเมริกา",
-    GB: "สหราชอาณาจักร",
-    AU: "ออสเตรเลีย",
-    IN: "อินเดีย",
-    RU: "รัสเซีย",
-    DE: "เยอรมนี",
-    FR: "ฝรั่งเศส",
-    CA: "แคนาดา"
-  };
-
-  if (countryMap[code]) return countryMap[code];
-
-  if (name === "Thailand" || name === "Thai" || name === "ไทย") {
-    return "ประเทศไทย";
-  }
-
-  if (name === "Singapore") {
-    return "สิงคโปร์";
-  }
-
-  return name || "-";
-}
-
-async function fetchJsonWithTimeout(url, timeout = 6000) {
-  const controller = new AbortController();
-
-  const timer = setTimeout(() => {
-    controller.abort();
-  }, timeout);
-
-  try {
-    const res = await fetch(url, {
-      cache: "no-store",
-      signal: controller.signal
-    });
-
-    if (!res.ok) {
-      throw new Error("HTTP " + res.status);
-    }
-
-    return await res.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function getIPInfo() {
-  const jobs = [
-    async function () {
-      const d = await fetchJsonWithTimeout("https://ipapi.co/json/", 6000);
-
-      return {
-        source_api: "ipapi.co",
-        ip: d.ip || "",
-        country_name: d.country_name || "",
-        country_code: d.country_code || d.country || "",
-        latitude: d.latitude || "",
-        longitude: d.longitude || "",
-        org: d.org || "",
-        timezone: d.timezone || ""
-      };
-    },
-
-    async function () {
-      const d = await fetchJsonWithTimeout("https://ipwho.is/", 6000);
-
-      if (d.success === false) {
-        throw new Error(d.message || "ipwho.is failed");
-      }
-
-      return {
-        source_api: "ipwho.is",
-        ip: d.ip || "",
-        country_name: d.country || "",
-        country_code: d.country_code || "",
-        latitude: d.latitude || "",
-        longitude: d.longitude || "",
-        org: d.connection && d.connection.org ? d.connection.org : "",
-        timezone: d.timezone && d.timezone.id ? d.timezone.id : ""
-      };
-    },
-
-    async function () {
-      const d = await fetchJsonWithTimeout("https://get.geojs.io/v1/ip/geo.json", 6000);
-
-      return {
-        source_api: "geojs.io",
-        ip: d.ip || "",
-        country_name: d.country || "",
-        country_code: d.country_code || "",
-        latitude: d.latitude || "",
-        longitude: d.longitude || "",
-        org: d.organization_name || "",
-        timezone: d.timezone || ""
-      };
-    }
-  ];
-
-  try {
-    return await Promise.any(jobs.map(job => job()));
-  } catch (err) {
-    console.warn("Geo IP APIs failed:", err);
-
-    try {
-      const d = await fetchJsonWithTimeout("https://api.ipify.org?format=json", 5000);
-
-      return {
-        source_api: "api.ipify.org",
-        ip: d.ip || "",
-        country_name: "",
-        country_code: "",
-        latitude: "",
-        longitude: "",
-        org: "",
-        timezone: "",
-        error: "ดึงได้เฉพาะ IP ไม่มีประเทศและพิกัด"
-      };
-    } catch (e) {
-      return {
-        source_api: "",
-        ip: "",
-        country_name: "",
-        country_code: "",
-        latitude: "",
-        longitude: "",
-        org: "",
-        timezone: "",
-        error: "ดึงข้อมูล IP ไม่สำเร็จทุก API"
-      };
-    }
-  }
-}
-
-function normalizeIP(ip) {
-  return {
-    ip: ip.ip || "",
-    country_name: ip.country_name || ip.country || "",
-    country_code: ip.country_code || "",
-    latitude: ip.latitude || ip.lat || "",
-    longitude: ip.longitude || ip.lon || "",
-    org: ip.org || "",
-    timezone: ip.timezone || "",
-    source_api: ip.source_api || "",
-    error: ip.error || ""
-  };
-}
-
 /*
-  ส่งข้อมูลไป Admin แบบเงียบ ๆ
-  ไม่ alert ฝั่งผู้กด
+  ==============================
+  GPS
+  ==============================
 */
-async function postToAdmin(payload) {
+
+function getGpsInfo() {
   return new Promise((resolve) => {
-    const iframeName = "hidden_iframe_" + Date.now();
-
-    const iframe = document.createElement("iframe");
-    iframe.name = iframeName;
-    iframe.style.display = "none";
-    document.body.appendChild(iframe);
-
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = SCRIPT_URL;
-    form.target = iframeName;
-    form.style.display = "none";
-
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = "payload";
-    input.value = base64UrlEncode(JSON.stringify(payload));
-
-    form.appendChild(input);
-    document.body.appendChild(form);
-
-    form.submit();
-
-    setTimeout(() => {
-      form.remove();
-      iframe.remove();
-
+    if (!navigator.geolocation) {
       resolve({
-        ok: true,
-        message: "sent"
+        gps_error: "เบราว์เซอร์นี้ไม่รองรับ GPS"
       });
-    }, 1200);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        const coords = pos.coords;
+
+        const lat = coords.latitude;
+        const lng = coords.longitude;
+
+        resolve({
+          gps_latitude: lat,
+          gps_longitude: lng,
+          gps_accuracy: coords.accuracy ? Math.round(coords.accuracy) + " เมตร" : "",
+          gps_altitude: coords.altitude || "",
+          gps_speed: coords.speed || "",
+          gps_heading: coords.heading || "",
+          gps_error: "",
+          google_maps: "https://www.google.com/maps?q=" + lat + "," + lng
+        });
+      },
+      function(err) {
+        let msg = "";
+
+        if (err.code === 1) {
+          msg = "ผู้ใช้ไม่อนุญาต GPS";
+        } else if (err.code === 2) {
+          msg = "ไม่สามารถระบุตำแหน่ง GPS ได้";
+        } else if (err.code === 3) {
+          msg = "GPS หมดเวลา";
+        } else {
+          msg = err.message || "GPS error";
+        }
+
+        resolve({
+          gps_error: msg
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
   });
 }
 
-function showLoading(deviceName) {
-  result.textContent =
-`1 ชื่อเครื่อง
-ชื่อเครื่อง: ${deviceName}
+/*
+  ==============================
+  IP Info
+  ==============================
+*/
 
-
-====== ข้อมูล IP / VPN ======
-กำลังดึงข้อมูล IP...`;
-}
-
-function showResult(payload) {
-  result.textContent =
-`1 ชื่อเครื่อง
-ชื่อเครื่อง: ${val(payload.device_name)}
-
-
-====== ข้อมูล IP / VPN ======
-ประเทศ: ${val(payload.ip_country)}
-IP: ${val(payload.ip)}
-
-Google Maps IP:
-${val(payload.ip_google_maps)}`;
-}
-
-function showError(deviceName) {
-  result.textContent =
-`1 ชื่อเครื่อง
-ชื่อเครื่อง: ${deviceName}
-
-
-====== ข้อมูล IP / VPN ======
-ดึงข้อมูล IP ไม่สำเร็จ
-
-ลองใหม่อีกครั้ง หรือปิด AdBlock / VPN บางตัวที่บล็อก API`;
-}
-
-async function sendLocation() {
-  btn.disabled = true;
-  btn.textContent = "กำลังตรวจสอบ...";
-
-  const deviceName = getDeviceName();
-
-  showLoading(deviceName);
+async function getIpInfo() {
+  const result = {
+    ip: "",
+    ip_country: "",
+    ip_country_code: "",
+    ip_region: "",
+    ip_city: "",
+    ip_postal: "",
+    ip_latitude: "",
+    ip_longitude: "",
+    ip_org: "",
+    ip_asn: "",
+    ip_timezone: "",
+    ip_source_api: "",
+    ip_error: "",
+    ip_note: ""
+  };
 
   try {
-    const rawIP = await Promise.race([
-      getIPInfo(),
-      new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("IP_TIMEOUT")), 7000);
-      })
-    ]);
-
-    const ip = normalizeIP(rawIP);
-
-    const countryFullName = getCountryFullName(
-      ip.country_name,
-      ip.country_code
-    );
-
-    const ipGoogleMaps =
-      ip.latitude && ip.longitude
-        ? `https://www.google.com/maps?q=${ip.latitude},${ip.longitude}`
-        : "ไม่พบพิกัดจาก IP";
-
-    const payload = {
-      device_name: deviceName,
-
-      browser: getBrowserName(),
-      platform: navigator.platform || "",
-      user_agent: navigator.userAgent || "",
-      language: navigator.language || "",
-      screen: `${screen.width}x${screen.height}`,
-      timezone_browser: getBrowserTimezone(),
-
-      ip: ip.ip || "",
-      ip_country: countryFullName,
-      ip_country_code: ip.country_code || "",
-      ip_latitude: ip.latitude || "",
-      ip_longitude: ip.longitude || "",
-      ip_google_maps: ipGoogleMaps,
-      ip_org: ip.org || "",
-      ip_timezone: ip.timezone || "",
-      ip_source_api: ip.source_api || "",
-      ip_error: ip.error || "",
-
-      sent_at: new Date().toLocaleString("th-TH")
-    };
-
-    showResult(payload);
-
-    postToAdmin(payload).catch(err => {
-      console.warn("ส่งข้อมูลไม่สำเร็จ:", err);
+    const res = await fetch("https://ipapi.co/json/", {
+      method: "GET",
+      cache: "no-store"
     });
 
-  } catch (err) {
-    console.warn("IP error:", err);
-    showError(deviceName);
+    if (!res.ok) {
+      throw new Error("ipapi.co status " + res.status);
+    }
+
+    const data = await res.json();
+
+    result.ip = data.ip || "";
+    result.ip_country = data.country_name || "";
+    result.ip_country_code = data.country_code || "";
+    result.ip_region = data.region || "";
+    result.ip_city = data.city || "";
+    result.ip_postal = data.postal || "";
+    result.ip_latitude = data.latitude || "";
+    result.ip_longitude = data.longitude || "";
+    result.ip_org = data.org || "";
+    result.ip_asn = data.asn || "";
+    result.ip_timezone = data.timezone || "";
+    result.ip_source_api = "ipapi.co";
+
+    return result;
+
+  } catch (err1) {
+    try {
+      const res2 = await fetch("https://get.geojs.io/v1/ip/geo.json", {
+        method: "GET",
+        cache: "no-store"
+      });
+
+      if (!res2.ok) {
+        throw new Error("geojs.io status " + res2.status);
+      }
+
+      const data2 = await res2.json();
+
+      result.ip = data2.ip || "";
+      result.ip_country = data2.country || "";
+      result.ip_country_code = data2.country_code || "";
+      result.ip_region = data2.region || "";
+      result.ip_city = data2.city || "";
+      result.ip_postal = "";
+      result.ip_latitude = data2.latitude || "";
+      result.ip_longitude = data2.longitude || "";
+      result.ip_org = data2.organization_name || "";
+      result.ip_asn = "";
+      result.ip_timezone = data2.timezone || "";
+      result.ip_source_api = "geojs.io";
+
+      return result;
+
+    } catch (err2) {
+      result.ip_error = String(err2);
+      result.ip_note = "ดึง IP ไม่สำเร็จทั้ง ipapi.co และ geojs.io";
+      return result;
+    }
+  }
+}
+
+/*
+  ==============================
+  แปลง GPS เป็นที่อยู่
+  ใช้ Nominatim ฟรี
+  ==============================
+*/
+
+async function reverseGeocode(lat, lng) {
+  const result = {
+    full_address: "",
+    country_gps: "",
+    province_gps: "",
+    district_gps: "",
+    subdistrict_gps: "",
+    postcode_gps: ""
+  };
+
+  const url =
+    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" +
+    encodeURIComponent(lat) +
+    "&lon=" +
+    encodeURIComponent(lng) +
+    "&accept-language=th";
+
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  if (!res.ok) {
+    throw new Error("reverse geocode status " + res.status);
   }
 
-  btn.disabled = false;
-  btn.textContent = "กดเพื่อตรวจสอบ";
+  const data = await res.json();
+  const addr = data.address || {};
+
+  result.full_address = data.display_name || "";
+
+  result.country_gps = addr.country || "";
+  result.province_gps =
+    addr.province ||
+    addr.state ||
+    "";
+
+  result.district_gps =
+    addr.city ||
+    addr.town ||
+    addr.municipality ||
+    addr.county ||
+    addr.district ||
+    "";
+
+  result.subdistrict_gps =
+    addr.suburb ||
+    addr.village ||
+    addr.hamlet ||
+    addr.quarter ||
+    addr.neighbourhood ||
+    "";
+
+  result.postcode_gps = addr.postcode || "";
+
+  return result;
+}
+
+/*
+  ==============================
+  ส่งเข้า Google Sheet
+  สำคัญ: ส่งเป็น payload=base64
+  ==============================
+*/
+
+function encodePayload(obj) {
+  const json = JSON.stringify(obj);
+
+  return btoa(
+    unescape(
+      encodeURIComponent(json)
+    )
+  );
+}
+
+async function sendToSheet(data) {
+  const payload = encodePayload(data);
+  const body = "payload=" + encodeURIComponent(payload);
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([body], {
+      type: "application/x-www-form-urlencoded;charset=UTF-8"
+    });
+
+    const ok = navigator.sendBeacon(SCRIPT_URL, blob);
+
+    if (ok) {
+      return true;
+    }
+  }
+
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+    },
+    body: body
+  });
+
+  return true;
+}
+
+/*
+  ==============================
+  แสดงผลหน้าเว็บ
+  ==============================
+*/
+
+function showResult(data) {
+  resultEl.style.display = "block";
+
+  resultGrid.innerHTML = `
+    <div class="label">ชื่อเครื่อง</div>
+    <div>${escapeHtml(data.device_name)}</div>
+
+    <div class="label">ระบบ</div>
+    <div>${escapeHtml(data.platform)}</div>
+
+    <div class="label">เบราว์เซอร์</div>
+    <div>${escapeHtml(data.browser)}</div>
+
+    <div class="label">ภาษาเครื่อง</div>
+    <div>${escapeHtml(data.language)}</div>
+
+    <div class="label">ขนาดจอ</div>
+    <div>${escapeHtml(data.screen)}</div>
+
+    <div class="label">Timezone Browser</div>
+    <div>${escapeHtml(data.timezone_browser)}</div>
+
+    <div class="label">GPS Latitude</div>
+    <div>${escapeHtml(data.gps_latitude)}</div>
+
+    <div class="label">GPS Longitude</div>
+    <div>${escapeHtml(data.gps_longitude)}</div>
+
+    <div class="label">ความแม่นยำ</div>
+    <div>${escapeHtml(data.gps_accuracy)}</div>
+
+    <div class="label">GPS Error</div>
+    <div>${escapeHtml(data.gps_error)}</div>
+
+    <div class="label">Google Maps</div>
+    <div>
+      ${
+        data.google_maps
+          ? `<a href="${escapeHtml(data.google_maps)}" target="_blank">เปิดแผนที่</a>`
+          : "-"
+      }
+    </div>
+
+    <div class="label">ที่อยู่ GPS</div>
+    <div>${escapeHtml(data.full_address)}</div>
+
+    <div class="label">IP</div>
+    <div>${escapeHtml(data.ip)}</div>
+
+    <div class="label">ประเทศ IP</div>
+    <div>${escapeHtml(data.ip_country)}</div>
+
+    <div class="label">เมือง IP</div>
+    <div>${escapeHtml(data.ip_city)}</div>
+
+    <div class="label">ผู้ให้บริการ IP</div>
+    <div>${escapeHtml(data.ip_org)}</div>
+
+    <div class="label">IP Error</div>
+    <div>${escapeHtml(data.ip_error)}</div>
+
+    <div class="label">เวลาที่ส่ง</div>
+    <div>${escapeHtml(data.sent_at)}</div>
+  `;
+
+  jsonBox.textContent = JSON.stringify(data, null, 2);
+}
+
+function escapeHtml(text) {
+  return String(text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 </script>
 
