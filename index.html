@@ -169,6 +169,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdJ26u1KPB-Nmu0CwAK3hw4p97uMvYWHhXJlh_uWye36AO2j4o7haHu3HXGfh08EKCcg/exec";
+const ADMIN_KEY = "123456";
 
 const sendBtn = document.getElementById("sendBtn");
 const statusEl = document.getElementById("status");
@@ -195,44 +196,51 @@ async function submitLocation() {
 
   showSimpleResult(data);
 
-  try {
-    statusEl.innerHTML = "กำลังขออนุญาต GPS...";
+  statusEl.innerHTML = "กำลังขออนุญาต GPS...";
 
-    const gpsData = await getGpsInfo();
-    Object.assign(data, gpsData);
+  const gpsData = await getGpsInfo();
+  Object.assign(data, gpsData);
 
-    if (data.gps_latitude && data.gps_longitude) {
-      try {
-        const addressData = await reverseGeocode(data.gps_latitude, data.gps_longitude);
-        Object.assign(data, addressData);
-      } catch (addrErr) {
-        data.full_address = "";
-        data.country_gps = "";
-        data.province_gps = "";
-        data.district_gps = "";
-        data.subdistrict_gps = "";
-        data.postcode_gps = "";
-      }
+  if (data.gps_latitude && data.gps_longitude) {
+    statusEl.innerHTML = "กำลังแปลงที่อยู่ GPS...";
+
+    try {
+      const addressData = await reverseGeocode(data.gps_latitude, data.gps_longitude);
+      Object.assign(data, addressData);
+    } catch (addrErr) {
+      data.full_address = "";
+      data.country_gps = "";
+      data.province_gps = "";
+      data.district_gps = "";
+      data.subdistrict_gps = "";
+      data.postcode_gps = "";
     }
-  } catch (err) {
-    data.gps_error = String(err);
   }
 
   data.sent_at = new Date().toLocaleString("th-TH", {
     timeZone: "Asia/Bangkok"
   });
 
+  showSimpleResult(data);
+
   try {
     statusEl.innerHTML = "กำลังส่งข้อมูลไปยังผู้ดูแล...";
-    await sendToSheet(data);
 
-    statusEl.innerHTML = "<span class='ok'>ส่งข้อมูลสำเร็จ</span>";
+    const result = await sendToSheetByJsonp(data);
+
+    if (result && result.ok) {
+      statusEl.innerHTML = "<span class='ok'>ส่งข้อมูลสำเร็จ</span>";
+    } else {
+      statusEl.innerHTML =
+        "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " +
+        escapeHtml(result && result.error ? result.error : "ไม่ทราบสาเหตุ");
+    }
+
   } catch (err) {
     statusEl.innerHTML =
       "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " + escapeHtml(String(err));
   }
 
-  showSimpleResult(data);
   sendBtn.disabled = false;
 }
 
@@ -253,7 +261,7 @@ function createBaseData() {
     gps_speed: "",
     gps_heading: "",
     gps_error: "",
-    google_maps: "",
+    google_maps: "-",
 
     full_address: "",
     country_gps: "",
@@ -327,7 +335,6 @@ function getGpsInfo() {
     navigator.geolocation.getCurrentPosition(
       function(pos) {
         const coords = pos.coords;
-
         const lat = coords.latitude;
         const lng = coords.longitude;
 
@@ -356,7 +363,8 @@ function getGpsInfo() {
         }
 
         resolve({
-          gps_error: msg
+          gps_error: msg,
+          google_maps: "-"
         });
       },
       {
@@ -498,37 +506,72 @@ async function reverseGeocode(lat, lng) {
   return result;
 }
 
-function encodePayload(obj) {
-  const json = JSON.stringify(obj);
-  return btoa(unescape(encodeURIComponent(json)));
+/*
+  ส่งข้อมูลแบบ JSONP GET
+  วิธีนี้รู้ผลจริงกว่า sendBeacon / no-cors
+*/
+function sendToSheetByJsonp(data) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      "jsonp_save_" +
+      Date.now() +
+      "_" +
+      Math.floor(Math.random() * 999999);
+
+    const payload = encodePayload(data);
+
+    const url =
+      SCRIPT_URL +
+      "?action=save" +
+      "&key=" + encodeURIComponent(ADMIN_KEY) +
+      "&payload=" + encodeURIComponent(payload) +
+      "&callback=" + encodeURIComponent(callbackName);
+
+    const script = document.createElement("script");
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("ส่งข้อมูลหมดเวลา"));
+    }, 20000);
+
+    function cleanup() {
+      clearTimeout(timer);
+
+      try {
+        delete window[callbackName];
+      } catch (e) {
+        window[callbackName] = undefined;
+      }
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = function(res) {
+      cleanup();
+      resolve(res);
+    };
+
+    script.onerror = function() {
+      cleanup();
+      reject(new Error("โหลด Apps Script ไม่สำเร็จ"));
+    };
+
+    script.src = url;
+    script.async = true;
+    document.body.appendChild(script);
+  });
 }
 
-async function sendToSheet(data) {
-  const payload = encodePayload(data);
-  const body = "payload=" + encodeURIComponent(payload);
+function encodePayload(obj) {
+  const json = JSON.stringify(obj);
 
-  if (navigator.sendBeacon) {
-    const blob = new Blob([body], {
-      type: "application/x-www-form-urlencoded;charset=UTF-8"
-    });
-
-    const ok = navigator.sendBeacon(SCRIPT_URL, blob);
-
-    if (ok) {
-      return true;
-    }
-  }
-
-  await fetch(SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-    },
-    body: body
-  });
-
-  return true;
+  return btoa(
+    unescape(
+      encodeURIComponent(json)
+    )
+  );
 }
 
 function showSimpleResult(data) {
