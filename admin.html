@@ -1,397 +1,150 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+/*
+  ==============================
+  ตั้งค่า
+  ==============================
+*/
 
-  <title>Admin - รายงานตำแหน่ง</title>
+// ชื่อชีตที่เก็บข้อมูล
+// ถ้าชีตของคุณชื่อ Sheet1 ให้เปลี่ยนเป็น "Sheet1"
+const SHEET_NAME = "data";
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, Tahoma, sans-serif;
-      background: #0f172a;
-      color: #ffffff;
-      padding: 20px;
-    }
-
-    h1 {
-      margin: 0 0 14px;
-      font-size: 26px;
-    }
-
-    .top {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 10px;
-      background: #22c55e;
-      color: #ffffff;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #16a34a;
-    }
-
-    .danger {
-      background: #ef4444;
-    }
-
-    .danger:hover {
-      background: #dc2626;
-    }
-
-    .status {
-      margin-bottom: 16px;
-      color: #cbd5e1;
-      line-height: 1.6;
-    }
-
-    .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 14px;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.28);
-    }
-
-    .card h2 {
-      margin: 0 0 10px;
-      font-size: 18px;
-      color: #86efac;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 190px 1fr;
-      gap: 8px;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .label {
-      color: #cbd5e1;
-      font-weight: bold;
-    }
-
-    a {
-      color: #38bdf8;
-      word-break: break-all;
-    }
-
-    pre {
-      background: #020617;
-      color: #ffffff;
-      padding: 12px;
-      border-radius: 10px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      margin-top: 12px;
-      font-size: 12px;
-      max-height: 260px;
-    }
-
-    .badge-ok {
-      color: #86efac;
-      font-weight: bold;
-    }
-
-    .badge-error {
-      color: #fca5a5;
-      font-weight: bold;
-    }
-
-    @media (max-width: 650px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .label {
-        margin-top: 8px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-<h1>Admin - รายงานตำแหน่ง</h1>
-
-<div class="top">
-  <button onclick="loadData()">โหลดข้อมูล</button>
-  <button class="danger" onclick="clearData()">ล้างข้อมูลทั้งหมด</button>
-</div>
-
-<div id="status" class="status">กดโหลดข้อมูลเพื่อดูรายการ</div>
-<div id="list"></div>
-
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvu4JqhFIihrd3PfvmF98wUUgJF2MRr99Qi--bZ-0NP5NKrl-BuW5q0VLVu4LjHI10Mw/exec";
+// key ต้องตรงกับ ADMIN_KEY ในหน้า admin.html
 const ADMIN_KEY = "123456";
 
-const statusEl = document.getElementById("status");
-const listEl = document.getElementById("list");
+/*
+  ==============================
+  doGet หลัก
+  ==============================
+*/
 
-function val(v) {
-  if (v === null || v === undefined || v === "") return "-";
-  return v;
-}
+function doGet(e) {
+  const action = e.parameter.action || "";
+  const key = e.parameter.key || "";
+  const callback = e.parameter.callback || "";
 
-function escapeHtml(text) {
-  return String(text || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function jsonp(url) {
-  return new Promise((resolve, reject) => {
-    const callbackName =
-      "jsonp_admin_" +
-      Date.now() +
-      "_" +
-      Math.floor(Math.random() * 999999);
-
-    window[callbackName] = function(data) {
-      delete window[callbackName];
-      script.remove();
-      resolve(data);
-    };
-
-    const script = document.createElement("script");
-    script.src = url + "&callback=" + callbackName;
-
-    script.onerror = function() {
-      delete window[callbackName];
-      script.remove();
-      reject(new Error("โหลดข้อมูลไม่สำเร็จ"));
-    };
-
-    document.body.appendChild(script);
-  });
-}
-
-async function loadData() {
-  statusEl.textContent = "กำลังโหลดข้อมูล...";
-  listEl.innerHTML = "";
-
-  const url =
-    SCRIPT_URL +
-    "?action=list" +
-    "&key=" + encodeURIComponent(ADMIN_KEY);
+  let result = {};
 
   try {
-    const data = await jsonp(url);
-
-    if (!data.ok) {
-      statusEl.innerHTML =
-        "<span class='badge-error'>" +
-        escapeHtml(data.error || "โหลดข้อมูลไม่สำเร็จ") +
-        "</span>";
-      return;
+    if (key !== ADMIN_KEY) {
+      result = {
+        ok: false,
+        error: "KEY ไม่ถูกต้อง"
+      };
+    } else if (action === "list") {
+      result = listData();
+    } else if (action === "clear") {
+      result = clearData();
+    } else {
+      result = {
+        ok: false,
+        error: "action ไม่ถูกต้อง"
+      };
     }
-
-    const rows = data.rows || [];
-
-    statusEl.innerHTML =
-      "<span class='badge-ok'>โหลดสำเร็จ</span> พบข้อมูลทั้งหมด " +
-      rows.length +
-      " รายการ";
-
-    if (rows.length === 0) {
-      listEl.innerHTML = "<div class='card'>ยังไม่มีข้อมูล</div>";
-      return;
-    }
-
-    listEl.innerHTML = rows.map((row, index) => renderCard(row, index)).join("");
-
   } catch (err) {
-    statusEl.innerHTML =
-      "<span class='badge-error'>โหลดข้อมูลไม่สำเร็จ:</span> " +
-      escapeHtml(String(err));
+    result = {
+      ok: false,
+      error: String(err)
+    };
   }
+
+  return outputResult(result, callback);
 }
 
-async function clearData() {
-  const ok = confirm("ต้องการล้างข้อมูลทั้งหมดจริงไหม?");
-  if (!ok) return;
+/*
+  ==============================
+  ส่งออก JSON / JSONP
+  ==============================
+*/
 
-  statusEl.textContent = "กำลังล้างข้อมูล...";
+function outputResult(result, callback) {
+  const json = JSON.stringify(result);
 
-  const url =
-    SCRIPT_URL +
-    "?action=clear" +
-    "&key=" + encodeURIComponent(ADMIN_KEY);
+  // ถ้ามี callback ให้ตอบกลับแบบ JSONP
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + "(" + json + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
 
-  try {
-    const data = await jsonp(url);
+  // ถ้าไม่มี callback ให้ตอบกลับแบบ JSON ปกติ
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
 
-    if (!data.ok) {
-      statusEl.innerHTML =
-        "<span class='badge-error'>" +
-        escapeHtml(data.error || "ล้างข้อมูลไม่สำเร็จ") +
-        "</span>";
-      return;
+/*
+  ==============================
+  โหลดข้อมูลทั้งหมด
+  ==============================
+*/
+
+function listData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    return {
+      ok: false,
+      error: "ไม่พบชีตชื่อ " + SHEET_NAME
+    };
+  }
+
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length <= 1) {
+    return {
+      ok: true,
+      rows: []
+    };
+  }
+
+  const headers = values[0];
+  const rows = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const rowObj = {};
+
+    for (let j = 0; j < headers.length; j++) {
+      rowObj[String(headers[j])] = values[i][j];
     }
 
-    statusEl.innerHTML =
-      "<span class='badge-ok'>" +
-      escapeHtml(data.message || "ล้างข้อมูลแล้ว") +
-      "</span>";
-
-    listEl.innerHTML = "";
-
-  } catch (err) {
-    statusEl.innerHTML =
-      "<span class='badge-error'>ล้างข้อมูลไม่สำเร็จ:</span> " +
-      escapeHtml(String(err));
+    rows.push(rowObj);
   }
+
+  // แสดงข้อมูลล่าสุดขึ้นก่อน
+  rows.reverse();
+
+  return {
+    ok: true,
+    rows: rows
+  };
 }
 
-function renderCard(row, index) {
-  const maps = row["Google Maps"] || "";
-  const jsonText = row["ข้อมูลทั้งหมด JSON"] || "";
+/*
+  ==============================
+  ล้างข้อมูลทั้งหมด เหลือหัวตารางไว้
+  ==============================
+*/
 
-  return `
-    <div class="card">
-      <h2>#${index + 1} ${escapeHtml(val(row["ชื่อเครื่อง"]))}</h2>
+function clearData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
 
-      <div class="grid">
-        <div class="label">เวลา</div>
-        <div>${escapeHtml(val(row["เวลา"]))}</div>
+  if (!sheet) {
+    return {
+      ok: false,
+      error: "ไม่พบชีตชื่อ " + SHEET_NAME
+    };
+  }
 
-        <div class="label">ระบบ</div>
-        <div>${escapeHtml(val(row["ระบบ"]))}</div>
+  const lastRow = sheet.getLastRow();
 
-        <div class="label">เบราว์เซอร์</div>
-        <div>${escapeHtml(val(row["เบราว์เซอร์"]))}</div>
+  if (lastRow > 1) {
+    sheet.deleteRows(2, lastRow - 1);
+  }
 
-        <div class="label">User Agent</div>
-        <div>${escapeHtml(val(row["User Agent"]))}</div>
-
-        <div class="label">ภาษาเครื่อง</div>
-        <div>${escapeHtml(val(row["ภาษาเครื่อง"]))}</div>
-
-        <div class="label">ขนาดจอ</div>
-        <div>${escapeHtml(val(row["ขนาดจอ"]))}</div>
-
-        <div class="label">Timezone Browser</div>
-        <div>${escapeHtml(val(row["Timezone Browser"]))}</div>
-
-        <div class="label">GPS Latitude</div>
-        <div>${escapeHtml(val(row["GPS Latitude"]))}</div>
-
-        <div class="label">GPS Longitude</div>
-        <div>${escapeHtml(val(row["GPS Longitude"]))}</div>
-
-        <div class="label">ความแม่นยำ</div>
-        <div>${escapeHtml(val(row["ความแม่นยำ"]))}</div>
-
-        <div class="label">Altitude</div>
-        <div>${escapeHtml(val(row["Altitude"]))}</div>
-
-        <div class="label">Speed</div>
-        <div>${escapeHtml(val(row["Speed"]))}</div>
-
-        <div class="label">Heading</div>
-        <div>${escapeHtml(val(row["Heading"]))}</div>
-
-        <div class="label">GPS Error</div>
-        <div>${escapeHtml(val(row["GPS Error"]))}</div>
-
-        <div class="label">Google Maps</div>
-        <div>
-          ${
-            maps && maps !== "-"
-              ? `<a href="${escapeHtml(maps)}" target="_blank">เปิดแผนที่</a>`
-              : "-"
-          }
-        </div>
-
-        <div class="label">ที่อยู่เต็มจาก GPS</div>
-        <div>${escapeHtml(val(row["ที่อยู่เต็มจาก GPS"]))}</div>
-
-        <div class="label">ประเทศ GPS</div>
-        <div>${escapeHtml(val(row["ประเทศ GPS"]))}</div>
-
-        <div class="label">จังหวัด GPS</div>
-        <div>${escapeHtml(val(row["จังหวัด GPS"]))}</div>
-
-        <div class="label">อำเภอ GPS</div>
-        <div>${escapeHtml(val(row["อำเภอ GPS"]))}</div>
-
-        <div class="label">ตำบล GPS</div>
-        <div>${escapeHtml(val(row["ตำบล GPS"]))}</div>
-
-        <div class="label">รหัสไปรษณีย์ GPS</div>
-        <div>${escapeHtml(val(row["รหัสไปรษณีย์ GPS"]))}</div>
-
-        <div class="label">IP</div>
-        <div>${escapeHtml(val(row["IP"]))}</div>
-
-        <div class="label">ประเทศ IP</div>
-        <div>${escapeHtml(val(row["ประเทศ IP"]))}</div>
-
-        <div class="label">รหัสประเทศ IP</div>
-        <div>${escapeHtml(val(row["รหัสประเทศ IP"]))}</div>
-
-        <div class="label">จังหวัด IP</div>
-        <div>${escapeHtml(val(row["จังหวัด/Region IP"]))}</div>
-
-        <div class="label">เมือง IP</div>
-        <div>${escapeHtml(val(row["เมือง IP"]))}</div>
-
-        <div class="label">รหัสไปรษณีย์ IP</div>
-        <div>${escapeHtml(val(row["รหัสไปรษณีย์ IP"]))}</div>
-
-        <div class="label">Latitude IP</div>
-        <div>${escapeHtml(val(row["Latitude IP"]))}</div>
-
-        <div class="label">Longitude IP</div>
-        <div>${escapeHtml(val(row["Longitude IP"]))}</div>
-
-        <div class="label">ผู้ให้บริการ IP</div>
-        <div>${escapeHtml(val(row["ผู้ให้บริการ IP"]))}</div>
-
-        <div class="label">ASN IP</div>
-        <div>${escapeHtml(val(row["ASN IP"]))}</div>
-
-        <div class="label">Timezone IP</div>
-        <div>${escapeHtml(val(row["Timezone IP"]))}</div>
-
-        <div class="label">IP API</div>
-        <div>${escapeHtml(val(row["IP API"]))}</div>
-
-        <div class="label">IP Error</div>
-        <div>${escapeHtml(val(row["IP Error"]))}</div>
-
-        <div class="label">IP Note</div>
-        <div>${escapeHtml(val(row["IP Note"]))}</div>
-
-        <div class="label">เวลาที่ส่งจากเครื่อง</div>
-        <div>${escapeHtml(val(row["เวลาที่ส่งจากเครื่อง"]))}</div>
-      </div>
-
-      <pre>${escapeHtml(jsonText)}</pre>
-    </div>
-  `;
+  return {
+    ok: true,
+    message: "ล้างข้อมูลทั้งหมดแล้ว"
+  };
 }
-</script>
-
-</body>
-</html>
